@@ -1,8 +1,8 @@
-import { CellCoord, Digit, eliminateBasicFish, eliminateHiddenSubset, eliminateLockedCandidates, eliminateNakedSubset, getCandidates, GridIndex, isValidGrid, parseGrid, serializeGrid, solveFullHouse, solveHiddenSingle, solveLastDigit, solveNakedSingle, SubsetType, SudokuGrid } from 'sudoku-master'
+import { CellCoord, Digit, eliminateBasicFish, eliminateHiddenSubset, eliminateLockedCandidates, eliminateNakedSubset, getCandidates, GridIndex, houseIdentifier, isValidGrid, parseGrid, serializeGrid, solveFullHouse, solveHiddenSingle, solveLastDigit, solveNakedSingle, SubsetType, SudokuGrid } from 'sudoku-master'
 import { getCandidatesIndexes, getCellsContainingCandidate } from 'sudoku-master/lib/utils/candidate'
 import { getHouseValues, HOUSES_LIST } from 'sudoku-master/lib/utils/house'
 import { find, map } from 'remeda'
-import { any, concat, curry, equals, forEach, not, prop, propEq, reduce, reduced, reject, until, __ } from 'ramda'
+import { any, concat, curry, equals, forEach, not, prop, propEq, reduce, reduced, reject, until, zip, zipObj, __ } from 'ramda'
 import { SolvingResult } from 'sudoku-master/lib/solver/logical/solving/types'
 import { getCellIndexInGrid } from 'sudoku-master/lib/utils/cell'
 import { EliminationCandidate, EliminationResult } from 'sudoku-master/lib/solver/logical/eliminating/types'
@@ -126,7 +126,10 @@ if(grid) console.log(eliminateNakedSubset(grid, SubsetType.Triple))
 // console.log(grid)
 
 // grid = parseGrid(':0200:3:7..+8+49.3.+9+2+81+35..64..26+7.+89+6+42+783951+3+97+4+5.6+2+8+8+156+9+2+3..+2.+4+5+1+6.+931....+8.6.+5....4.1.::382: ')
-let grid = parseGrid('720096003000205000080004020000000060106503807040000000030800090000702000200430018')
+const args = process.argv.slice(2)
+
+// '720096003000205000080004020000000060106503807040000000030800090000702000200430018'
+let grid = parseGrid(args[0])
 
 grid = { ...grid!, candidates: getCandidates(grid!.digits) }
 console.log(serializeGrid(grid))
@@ -290,6 +293,43 @@ const solveOrEliminate = (params: Solution): Solution => {
 
 const result = transformUntilNoChange({ grid, techniques: [] }, solveOrEliminate)
 console.log(result.techniques)
+
+const allTechniques = [
+  'Full House',
+  'Last Digit',
+  'Naked Single',
+  'Hidden Single',
+  'Naked Pair',
+  'Naked Triple',
+  'Hidden Pair',
+  'Hidden Triple',
+  'Naked Quadruple',
+  'Hidden Quadruple',
+  'Locked Pair',
+  'X-Wing',
+  'Swordfish',
+  'Jellyfish',
+  'other'
+]
+
+const tally = new Map<string, number>(zip(allTechniques, (new Array(allTechniques.length)).fill(0)))
+
+console.log(
+  reduce(
+    (tally: Map<string, number>, technique) => {
+      if (tally.has(technique)) {
+        let count = tally.get(technique) || 0
+        tally.set(technique, ++count)
+      } else {
+        let other = tally.get('other') || 0
+        tally.set('other', ++other)
+      }
+      return tally
+    },
+    tally,
+    result.techniques
+  )
+)
 
 // let leGrid = parseGrid('72.196.83...285.7..8.374.2....94..6.196523847.4.61.....3.8.1.9....7.2...2..439.18')!
 // leGrid = { ...grid, candidates: getCandidates(leGrid.digits) }
