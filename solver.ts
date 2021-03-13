@@ -1,4 +1,4 @@
-import { curry, __ } from "ramda"
+import { curry, reduce, reduced, __ } from "ramda"
 import {
   eliminateBasicFish,
   eliminateHiddenSubset,
@@ -43,8 +43,19 @@ const eliminationTechniques = [
   eliminateBasicFishCurried(__, SubsetType.Quadruple)
 ]
 
+const applyNext = curry(
+  (fns: ((grid: SudokuGrid) => any)[], value: SudokuGrid): any[] | null => (
+    reduce((acc, nextFn) => {
+      const nextVal = nextFn(value)
+      return nextVal.length > 0 ? reduced(nextVal) : acc
+    }, null, fns)
+  )
+)
+
 const solve = (solution: Solution) => {
 
 }
+
+export { applyNext, solvingTechniques }
 
 export default solve
