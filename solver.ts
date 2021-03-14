@@ -43,7 +43,7 @@ const eliminationTechniques = [
   eliminateBasicFishCurried(__, SubsetType.Quadruple)
 ]
 
-const applyNext = curry(
+const nextOperation = curry(
   (fns: ((grid: SudokuGrid) => any)[], value: SudokuGrid): any[] | null => (
     reduce((acc, nextFn) => {
       const nextVal = nextFn(value)
@@ -56,6 +56,6 @@ const solve = (solution: Solution) => {
 
 }
 
-export { applyNext, solvingTechniques }
+export { eliminationTechniques, nextOperation, solvingTechniques }
 
 export default solve
