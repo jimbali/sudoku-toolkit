@@ -54,8 +54,6 @@ describe('nextOperation', () => {
 
     const applied = nextOperation(eliminationTechniques, grid)
 
-    console.log(JSON.stringify(applied))
-
     expect(applied).toEqual(
       [
         {
@@ -94,8 +92,6 @@ describe('nextOperation', () => {
     let grid = prepareGrid('309000470205709803087030900754861239600924758928357641000000596502106387806503124')!
 
     const applied = nextOperation(eliminationTechniques, grid)
-
-    console.log(JSON.stringify(applied))
 
     expect(applied).toEqual(
       [
@@ -144,6 +140,102 @@ describe('nextOperation', () => {
             type: 1,
             cells: [[0,2],[6,2],[8,2]],
             digits: [4,5,7]
+          }
+        }
+      ]
+    )
+  })
+
+  it('identifies a hidden pair', () => {
+    const grid = parseGrid(`
+      +-----------------+------------------------+------------------+
+      | 7    46  2      | 468    9      14568    | 3   168   456    |
+      | 8    346 5      | 23467  12347  23467    | 14  2679  24679  |
+      | 1    346 9      | 234678 234578 234678   | 458 2678  2467   |
+      +-----------------+------------------------+------------------+
+      | 25   9   138    | 238    6      12358    | 7   4     23     |
+      | 246  12  3467   | 23479  12347  23479    | 69  5     8      |
+      | 246  258 34678  | 234789 234578 234789   | 69  23    1      |
+      +-----------------+------------------------+------------------+
+      | 4569 7   1468   | 34689  348    34689    | 2   13689 34569  |
+      | 3    128 468    | 5      2478   246789   | 148 6789  4679   |
+      | 2469 258 468    | 1      23478  2346789  | 458 36789 34679  |
+      +-----------------+------------------------+------------------+
+    `)
+
+    const applied = nextOperation(eliminationTechniques, grid!)
+
+    expect(applied).toEqual(
+      [
+        {
+          technique: 'Hidden Pair',
+          eliminations: [
+            {
+              digit: 2,
+              coords: [
+                [
+                  3,
+                  5
+                ]
+              ]
+            },
+            {
+              digit: 3,
+              coords: [
+                [
+                  3,
+                  5
+                ]
+              ]
+            },
+            {
+              digit: 4,
+              coords: [
+                [
+                  0,
+                  5
+                ]
+              ]
+            },
+            {
+              digit: 6,
+              coords: [
+                [
+                  0,
+                  5
+                ]
+              ]
+            },
+            {
+              digit: 8,
+              coords: [
+                [
+                  0,
+                  5
+                ],
+                [
+                  3,
+                  5
+                ]
+              ]
+            }
+          ],
+          implication: {
+            type: 1,
+            cells: [
+              [
+                0,
+                5
+              ],
+              [
+                3,
+                5
+              ]
+            ],
+            digits: [
+              1,
+              5
+            ]
           }
         }
       ]
