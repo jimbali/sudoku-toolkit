@@ -61,13 +61,13 @@ describe('nextOperation', () => {
           eliminations: [
             {
               digit: 2,
-              coords: [[2,7]]
+              coords: [[2, 7]]
             }
           ],
           implication: {
             type: 1,
-            cells: [[7,7],[8,7]],
-            digits: [2,8]
+            cells: [[7, 7], [8, 7]],
+            digits: [2, 8]
           }
         },
         {
@@ -75,13 +75,13 @@ describe('nextOperation', () => {
           eliminations: [
             {
               digit: 2,
-              coords: [[2,7]]
+              coords: [[2, 7]]
             }
           ],
           implication: {
             type: 1,
-            cells: [[7,7],[8,7]],
-            digits: [2,8]
+            cells: [[7, 7], [8, 7]],
+            digits: [2, 8]
           }
         }
       ]
@@ -100,13 +100,13 @@ describe('nextOperation', () => {
           eliminations: [
             {
               digit: 2,
-              coords: [[2,3]]
+              coords: [[2, 3]]
             }
           ],
           implication: {
             type: 1,
-            cells: [[2,5],[2,8]],
-            digits: [2,5]
+            cells: [[2, 5], [2, 8]],
+            digits: [2, 5]
           }
         }
       ]
@@ -125,21 +125,82 @@ describe('nextOperation', () => {
           eliminations: [
             {
               digit: 4,
-              coords: [[1,2],[7,2]]
+              coords: [[1, 2], [7, 2]]
             },
             {
               digit: 5,
-              coords: [[2,2],[3,2],[5,2],[7,2]]
+              coords: [[2, 2], [3, 2], [5, 2], [7, 2]]
             },
             {
               digit: 7,
-              coords: [[3,2],[5,2]]
+              coords: [[3, 2], [5, 2]]
             }
           ],
           implication: {
             type: 1,
-            cells: [[0,2],[6,2],[8,2]],
-            digits: [4,5,7]
+            cells: [[0, 2], [6, 2], [8, 2]],
+            digits: [4, 5, 7]
+          }
+        }
+      ]
+    )
+  })
+
+  it('identifies locked candidates', () => {
+    const grid = parseGrid(`
+      +----------------+--------------+-----------------+
+      | 7     2   45   | 1   9   6    | 45    8   3     |
+      | 3469  16  139  | 2   8   5    | 1469  7   1469  |
+      | 569   8   19   | 3   7   4    | 1569  2   1569  |
+      +----------------+--------------+-----------------+
+      | 35    7   23   | 9   4   8    | 1235  6   125   |
+      | 1     9   6    | 5   2   3    | 8     4   7     |
+      | 358   4   238  | 6   1   7    | 2359  35  259   |
+      +----------------+--------------+-----------------+
+      | 456   3   457  | 8   56  1    | 24567 9   2456  |
+      | 45689 156 189  | 7   56  2    | 3456  35  456   |
+      | 2     56  57   | 4   3   9    | 567   1   8     |
+      +----------------+--------------+-----------------+
+    `)
+
+    const applied = nextOperation(eliminationTechniques, grid!)
+
+    expect(applied).toEqual(
+      [
+        {
+          technique: 'Locked Candidates Type 1 (Pointing)',
+          eliminations: [
+            {
+              digit: 5,
+              coords: [[2, 0], [6, 0], [7, 0]]
+            }
+          ],
+          implication: {
+            type: 0,
+            house: {
+              type: 'box',
+              index: 3,
+              cells: [27, 28, 29, 36, 37, 38, 45, 46, 47]
+            },
+            digit: 5
+          }
+        },
+        {
+          technique: 'Locked Candidates Type 2 (Claiming)',
+          eliminations: [
+            {
+              digit: 5,
+              coords: [[6, 0], [6, 2], [7, 0], [8, 2]]
+            }
+          ],
+          implication: {
+            type: 0,
+            house: {
+              type: 'col',
+              index: 1,
+              cells: [1, 10, 19, 28, 37, 46, 55, 64, 73]
+            },
+            digit: 5
           }
         }
       ]
@@ -172,144 +233,73 @@ describe('nextOperation', () => {
           eliminations: [
             {
               digit: 2,
-              coords: [
-                [
-                  3,
-                  5
-                ]
-              ]
+              coords: [[3, 5]]
             },
             {
               digit: 3,
-              coords: [
-                [
-                  3,
-                  5
-                ]
-              ]
+              coords: [[3, 5]]
             },
             {
               digit: 4,
-              coords: [
-                [
-                  0,
-                  5
-                ]
-              ]
+              coords: [[0, 5]]
             },
             {
               digit: 6,
-              coords: [
-                [
-                  0,
-                  5
-                ]
-              ]
+              coords: [[0, 5]]
             },
             {
               digit: 8,
-              coords: [
-                [
-                  0,
-                  5
-                ],
-                [
-                  3,
-                  5
-                ]
-              ]
+              coords: [[0, 5], [3, 5]]
             }
           ],
           implication: {
             type: 1,
-            cells: [
-              [
-                0,
-                5
-              ],
-              [
-                3,
-                5
-              ]
-            ],
-            digits: [
-              1,
-              5
-            ]
+            cells: [[0, 5], [3, 5]],
+            digits: [1, 5]
           }
         }
       ]
     )
   })
 
-  xit('identifies a hidden pair', () => {
-    let grid = prepareGrid('720196083000285070080374020070948060196523847040617000030801090000702000200439018')!
+  it('identifies a hidden triple', () => {
+    const grid = parseGrid(`
+      +-------------------+--------------+----------------+
+      | 139   168  168    | 7   2   4    | 13689 368 5    |
+      | 359   2    48     | 569 1   359  | 48    7   369  |
+      | 13579 1467 1567   | 569 8   359  | 1369  346 2    |
+      +-------------------+--------------+----------------+
+      | 178   9    147    | 18  3   6    | 2     5   47   |
+      | 6     14   2      | 59  7   159  | 39    34  8    |
+      | 78    5    3      | 2   4   89   | 679   1   69   |
+      +-------------------+--------------+----------------+
+      | 4     1678 15678  | 3   9   18   | 5678  2   16   |
+      | 157   3    1578   | 18  6   2    | 4578  9   47   |
+      | 2     168  9      | 4   5   7    | 368   368 136  |
+      +-------------------+--------------+----------------+
+    
+    `)
 
-    const candidates: [GridIndex, Pencilmarks][] = [
-      [ 2, [ 4, 5 ] ],
-      [ 6, [ 4, 5 ] ],
-      [ 9, [ 3, 4, 6, 9 ] ],
-      [ 10, [ 1, 6 ] ],
-      [ 11, [ 1, 3, 9 ] ],
-      [ 15, [ 1, 4, 6, 9 ] ],
-      [ 17, [ 1, 4, 6, 9 ] ],
-      [ 18, [ 5, 6, 9 ] ],
-      [ 20, [ 1, 9 ] ],
-      [ 24, [ 1, 5, 6, 9 ] ],
-      [ 26, [ 1, 5, 6, 9 ] ],
-      [ 27, [ 3, 5 ] ],
-      [ 29, [ 2, 3 ] ],
-      [ 32, [ 7, 8 ] ],
-      [ 33, [ 1, 2, 3, 5 ] ],
-      [ 35, [ 1, 2, 5 ] ],
-      [ 45, [ 3, 5, 8 ] ],
-      [ 47, [ 2, 3, 8 ] ],
-      [ 51, [ 2, 3, 5, 9 ] ],
-      [ 52, [ 3, 5 ] ],
-      [ 53, [ 2, 5, 9 ] ],
-      [ 54, [ 4, 5, 6 ] ],
-      [ 56, [ 4, 5, 7 ] ],
-      [ 58, [ 5, 6 ] ],
-      [ 60, [ 2, 4, 5, 6, 7 ] ],
-      [ 62, [ 2, 4, 5, 6 ] ],
-      [ 63, [ 4, 5, 6, 8, 9 ] ],
-      [ 64, [ 1, 5, 6 ] ],
-      [ 65, [ 1, 8, 9 ] ],
-      [ 67, [ 5, 6 ] ],
-      [ 69, [ 3, 4, 5, 6 ] ],
-      [ 70, [ 3, 5 ] ],
-      [ 71, [ 4, 5, 6 ] ],
-      [ 73, [ 5, 6 ] ],
-      [ 74, [ 5, 7 ] ],
-      [ 78, [ 5, 6, 7 ] ]
-    ]
-
-    grid = { ...grid, candidates: new Map(candidates) }
-
-    const applied = nextOperation(eliminationTechniques, grid)
+    const applied = nextOperation(eliminationTechniques, grid!)
 
     expect(applied).toEqual(
       [
         {
-          technique: 'Naked Pair',
+          technique: 'Hidden Triple',
           eliminations: [
             {
-              digit: 4,
-              coords: [[1, 2],[7,2]]
+              digit: 6,
+              coords: [[6, 6]]
             },
             {
-              digit: 5,
-              coords: [[2,2],[3,2],[5,2],[7,2]]
-            },
-            {
-              digit: 7,
-              coords: [[3,2],[5,2]]
+              digit: 8,
+              coords: [[6, 6], [7, 6]]
             }
           ],
           implication: {
             type: 1,
-            cells: [[0,2],[6,2],[8,2]],
-            digits: [4,5,7]
+            cells: [[6, 6], [7, 6], [7, 8]],
+            digits: [4, 5, 7]
           }
         }
       ]
