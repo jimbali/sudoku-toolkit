@@ -305,4 +305,175 @@ describe('nextOperation', () => {
       ]
     )
   })
+
+  it('identifies an X-wing', () => {
+    const grid = parseGrid(`
+      +---------------+--------------+--------------+
+      | 3   16   9    | 26  18  258  | 4   7   25   |
+      | 2   146  5    | 7   14  9    | 8   16  3    |
+      | 14  8    7    | 46  3   25   | 9   16  25   |
+      +---------------+--------------+--------------+
+      | 7   5    4    | 8   6   1    | 2   3   9    |
+      | 6   13   13   | 9   2   4    | 7   5   8    |
+      | 9   2    8    | 3   5   7    | 6   4   1    |
+      +---------------+--------------+--------------+
+      | 14  1347 13   | 24  478 28   | 5   9   6    |
+      | 5   49   2    | 1   49  6    | 3   8   7    |
+      | 8   79   6    | 5   79  3    | 1   2   4    |
+      +---------------+--------------+--------------+    
+    `)
+
+    const applied = nextOperation(eliminationTechniques, grid!)
+
+    expect(applied).toEqual(
+      [
+        {
+          technique: 'X-Wing',
+          eliminations: [
+            {
+              digit: 4,
+              coords: [[6, 1], [6, 4]]
+            }
+          ],
+          implication: {
+            type: 2,
+            line: 'row',
+            digit: 4,
+            baseSet: [1, 7],
+            coverSet: [1, 4]
+          }
+        },
+        {
+          technique: 'X-Wing',
+          eliminations: [
+            {
+              digit: 4,
+              coords: [[6, 1], [6, 4]]
+            }
+          ],
+          implication: {
+            type: 2,
+            line: 'col',
+            digit: 4,
+            baseSet: [0, 3],
+            coverSet: [2, 6]
+          }
+        }
+      ]
+    )
+  })
+
+  it('identifies a swordfish', () => {
+    const grid = parseGrid(`
+      +--------------+---------------+--------------+
+      | 189 5   89   | 47  3   17    | 6   49  2    |
+      | 6   4   2    | 8   9   5     | 3   1   7    |
+      | 19  3   7    | 46  2   16    | 8   459 59   |
+      +--------------+---------------+--------------+
+      | 89  2   3    | 5   18  4     | 7   69  169  |
+      | 4   89  6    | 37  178 378   | 5   2   19   |
+      | 5   7   1    | 9   6   2     | 4   8   3    |
+      +--------------+---------------+--------------+
+      | 2   1   4    | 367 578 3678  | 9   56  568  |
+      | 7   6   58   | 1   58  9     | 2   3   4    |
+      | 3   89  589  | 2   4   68    | 1   7   568  |
+      +--------------+---------------+--------------+
+    `)
+
+    const applied = nextOperation(eliminationTechniques, grid!)
+
+    expect(applied).toEqual(
+      [
+        {
+          technique: 'Swordfish',
+          eliminations: [
+            {
+              digit: 8,
+              coords: [[8, 2], [4, 4], [6, 4]]
+            }
+          ],
+          implication: {
+            type: 2,
+            line: 'row',
+            digit: 8,
+            baseSet: [0, 3, 7],
+            coverSet: [0, 2, 4]
+          }
+        },
+        {
+          technique: 'Swordfish',
+          eliminations: [
+            {
+              digit: 8,
+              coords: [[4, 4], [6, 4], [8, 2]]
+            }
+          ],
+          implication: {
+            type: 2,
+            line: 'col',
+            digit: 8,
+            baseSet: [1, 5, 8],
+            coverSet: [4, 6, 8]
+          }
+        }
+      ]
+    )
+  })
+
+  it('identifies a jellyfish', () => {
+    const grid = parseGrid(`
+      +--------------+------------------+---------------+
+      | 356 2   4    | 167  9     156   | 17  1367 8    |
+      | 8   56  36   | 4    167   2     | 9   1367 156  |
+      | 7   1   9    | 36   368   3568  | 2   4    56   |
+      +--------------+------------------+---------------+
+      | 169 7   5    | 8    126   4     | 3   129  12   |
+      | 2   4   16   | 9    136   136   | 5   8    7    |
+      | 19  3   8    | 5    12    7     | 6   129  4    |
+      +--------------+------------------+---------------+
+      | 13  8   2    | 1367 13467 136   | 147 5    9    |
+      | 156 56  7    | 2    48    9     | 48  16   3    |
+      | 4   9   136  | 137  5     138   | 178 1267 126  |
+      +--------------+------------------+---------------+
+    `)
+
+    const applied = nextOperation(eliminationTechniques, grid!)
+
+    expect(applied).toEqual(
+      [
+        {
+          technique: 'Jellyfish',
+          eliminations: [
+            {
+              digit: 1,
+              coords: [[6, 0], [4, 4], [6, 4], [0, 7], [8, 7], [8, 8]]
+            }
+          ],
+          implication: {
+            type: 2,
+            line: 'row',
+            digit: 1,
+            baseSet: [1, 3, 5, 7],
+            coverSet: [0, 4, 7, 8]
+          }
+        },
+        {
+          technique: 'Jellyfish',
+          eliminations: [
+            {
+              digit: 1,
+              coords: [[0, 7], [4, 4], [6, 0], [6, 4], [8, 7], [8, 8]]
+            }
+          ],
+          implication: {
+            type: 2,
+            line: 'col',
+            digit: 1,
+            baseSet: [2, 3, 5, 6],
+            coverSet: [0, 4, 6, 8]
+          }
+        }
+      ]
+    )
+  })
 })
