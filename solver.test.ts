@@ -1,5 +1,6 @@
-import { getCandidates, GridIndex, parseGrid, Pencilmarks, SudokuGrid } from 'sudoku-master'
-import solve, { eliminationTechniques, nextOperation, solvingTechniques } from './solver'
+import { Digit, getCandidates, GridIndex, parseGrid, Pencilmarks, serializeGrid, SudokuGrid } from 'sudoku-master'
+import { SolvingResult } from 'sudoku-master/lib/solver/logical/solving/types'
+import solve, { applyOperation, eliminateInvalidCandidates, eliminationTechniques, enterDigit, nextOperation, solvingTechniques } from './solver'
 
 // describe('solve', () => {
 //   it('solves a naked triple', () => {
@@ -22,7 +23,7 @@ describe('nextOperation', () => {
 
     const applied = nextOperation(solvingTechniques, grid)
 
-    expect(applied).toEqual([{ coord: [0, 4], digit: 4, technique: 'Full House'} ])
+    expect(applied).toEqual([{ coord: [0, 4], digit: 4, technique: 'Full House' }])
   })
 
   it('identifies a last digit', () => {
@@ -30,7 +31,7 @@ describe('nextOperation', () => {
 
     const applied = nextOperation(solvingTechniques, grid)
 
-    expect(applied).toEqual([{ coord: [3, 6], digit: 7, technique: 'Last Digit'} ])
+    expect(applied).toEqual([{ coord: [3, 6], digit: 7, technique: 'Last Digit' }])
   })
 
   it('identifies a naked single', () => {
@@ -38,7 +39,7 @@ describe('nextOperation', () => {
 
     const applied = nextOperation(solvingTechniques, grid)
 
-    expect(applied).toEqual([{ coord: [8, 2], digit: 3, technique: 'Naked Single'} ])
+    expect(applied).toEqual([{ coord: [8, 2], digit: 3, technique: 'Naked Single' }])
   })
 
   it('identifies a hidden single', () => {
@@ -46,7 +47,7 @@ describe('nextOperation', () => {
 
     const applied = nextOperation(solvingTechniques, grid)
 
-    expect(applied).toEqual([{ coord: [0, 4], digit: 6, technique: 'Hidden Single'} ])
+    expect(applied).toEqual([{ coord: [0, 4], digit: 6, technique: 'Hidden Single' }])
   })
 
   it('identifies a pointing pair', () => {
@@ -475,5 +476,108 @@ describe('nextOperation', () => {
         }
       ]
     )
+  })
+
+  describe('enterDigit', () => {
+    it('enters digits from a SolvingResult', () => {
+      const grid = prepareGrid('672105398145000672089002451063574819958000743014090526007200084026000035001409067')!
+      const solvingResult: SolvingResult = { coord: [0, 4], digit: 4, technique: 'Full House' }
+
+      const applied = enterDigit(grid, solvingResult)
+
+      expect(applied.digits).toEqual(
+        prepareGrid('672145398145000672089002451063574819958000743014090526007200084026000035001409067').digits
+      )
+    })
+  })
+
+  describe('eliminateInvalidCandidates', () => {
+    it('removes solved digits', () => {
+      const digits: [GridIndex, Digit][] = [
+        [ 0, 6 ],  [ 1, 7 ],  [ 2, 2 ],  [ 3, 1 ],
+        [ 4, 4 ],  [ 5, 5 ],  [ 6, 3 ],  [ 7, 9 ],
+        [ 8, 8 ],  [ 9, 1 ],  [ 10, 4 ], [ 11, 5 ],
+        [ 15, 6 ], [ 16, 7 ], [ 17, 2 ], [ 19, 8 ],
+        [ 20, 9 ], [ 23, 2 ], [ 24, 4 ], [ 25, 5 ],
+        [ 26, 1 ], [ 28, 6 ], [ 29, 3 ], [ 30, 5 ],
+        [ 31, 7 ], [ 32, 4 ], [ 33, 8 ], [ 34, 1 ],
+        [ 35, 9 ], [ 36, 9 ], [ 37, 5 ], [ 38, 8 ],
+        [ 42, 7 ], [ 43, 4 ], [ 44, 3 ], [ 46, 1 ],
+        [ 47, 4 ], [ 49, 9 ], [ 51, 5 ], [ 52, 2 ],
+        [ 53, 6 ], [ 56, 7 ], [ 57, 2 ], [ 61, 8 ],
+        [ 62, 4 ], [ 64, 2 ], [ 65, 6 ], [ 70, 3 ],
+        [ 71, 5 ], [ 74, 1 ], [ 75, 4 ], [ 77, 9 ],
+        [ 79, 6 ], [ 80, 7 ]
+      ]
+      const candidates: [GridIndex, Pencilmarks][] = [
+        [ 4, [ 4 ] ],           [ 12, [ 3, 8, 9 ] ],
+        [ 13, [ 3, 8 ] ],       [ 14, [ 3, 8 ] ],
+        [ 18, [ 3 ] ],          [ 21, [ 3, 6, 7 ] ],
+        [ 22, [ 3, 6 ] ],       [ 27, [ 2 ] ],
+        [ 39, [ 6 ] ],          [ 40, [ 1, 2, 6 ] ],
+        [ 41, [ 1, 6 ] ],       [ 45, [ 7 ] ],
+        [ 48, [ 3, 8 ] ],       [ 50, [ 3, 8 ] ],
+        [ 54, [ 3, 5 ] ],       [ 55, [ 3, 9 ] ],
+        [ 58, [ 1, 3, 5, 6 ] ], [ 59, [ 1, 3, 6 ] ],
+        [ 60, [ 1, 9 ] ],       [ 63, [ 4, 8 ] ],
+        [ 66, [ 7, 8 ] ],       [ 67, [ 1, 8 ] ],
+        [ 68, [ 1, 7, 8 ] ],    [ 69, [ 1, 9 ] ],
+        [ 72, [ 3, 5, 8 ] ],    [ 73, [ 3 ] ],
+        [ 76, [ 3, 5, 8 ] ],    [ 78, [ 2 ] ]
+      ]
+      const grid = { digits: new Map(digits), candidates: new Map(candidates) }
+      console.log(grid.digits)
+
+      const applied = eliminateInvalidCandidates(grid)
+
+      expect(Array.from(applied.digits)).toEqual(
+        [
+          [ 0, 6 ],  [ 1, 7 ],  [ 2, 2 ],  [ 3, 1 ],
+          [ 4, 4 ],  [ 5, 5 ],  [ 6, 3 ],  [ 7, 9 ],
+          [ 8, 8 ],  [ 9, 1 ],  [ 10, 4 ], [ 11, 5 ],
+          [ 15, 6 ], [ 16, 7 ], [ 17, 2 ], [ 18, 3 ],
+          [ 19, 8 ], [ 20, 9 ], [ 23, 2 ], [ 24, 4 ],
+          [ 25, 5 ], [ 26, 1 ], [ 27, 2 ], [ 28, 6 ],
+          [ 29, 3 ], [ 30, 5 ], [ 31, 7 ], [ 32, 4 ],
+          [ 33, 8 ], [ 34, 1 ], [ 35, 9 ], [ 36, 9 ],
+          [ 37, 5 ], [ 38, 8 ], [ 39, 6 ], [ 42, 7 ],
+          [ 43, 4 ], [ 44, 3 ], [ 45, 7 ], [ 46, 1 ],
+          [ 47, 4 ], [ 49, 9 ], [ 51, 5 ], [ 52, 2 ],
+          [ 53, 6 ], [ 56, 7 ], [ 57, 2 ], [ 61, 8 ],
+          [ 62, 4 ], [ 64, 2 ], [ 65, 6 ], [ 70, 3 ],
+          [ 71, 5 ], [ 73, 3 ], [ 74, 1 ], [ 75, 4 ],
+          [ 77, 9 ], [ 78, 2 ], [ 79, 6 ], [ 80, 7 ]
+        ]
+      )
+
+      expect(Array.from(applied.candidates)).toEqual(
+        [
+          [ 12, [ 3, 8, 9 ] ], [ 13, [ 3, 8 ] ],
+          [ 14, [ 3, 8 ] ],    [ 21, [ 3, 6, 7 ] ],
+          [ 22, [ 3, 6 ] ],    [ 40, [ 1, 2, 6 ] ],
+          [ 41, [ 1, 6 ] ],    [ 48, [ 3, 8 ] ],
+          [ 50, [ 3, 8 ] ],    [ 54, [ 3, 5 ] ],
+          [ 55, [ 3, 9 ] ],    [ 58, [ 1, 3, 5, 6 ] ],
+          [ 59, [ 1, 3, 6 ] ], [ 60, [ 1, 9 ] ],
+          [ 63, [ 4, 8 ] ],    [ 66, [ 7, 8 ] ],
+          [ 67, [ 1, 8 ] ],    [ 68, [ 1, 7, 8 ] ],
+          [ 69, [ 1, 9 ] ],    [ 72, [ 3, 5, 8 ] ],
+          [ 76, [ 3, 5, 8 ] ]
+        ]
+      )
+    })
+  })
+  
+  xdescribe('applyOperation', () => {
+    it('enters digits from a SolvingResult', () => {
+      const grid = prepareGrid('672105398145000672089002451063574819958000743014090526007200084026000035001409067')!
+      const solvingResult: SolvingResult = { coord: [0, 4], digit: 4, technique: 'Full House' }
+
+      const applied = applyOperation(grid, solvingResult)
+
+      expect(applied).toEqual(
+        prepareGrid('672145398145000672089002451063574819958000743014090526007200084026000035001409067')
+      )
+    })
   })
 })

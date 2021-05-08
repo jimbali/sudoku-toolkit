@@ -1,9 +1,15 @@
-import { curry, reduce, reduced, __ } from "ramda"
+import { append, curry, filter, intersection, map, prop, propEq, reduce, reduced, sortBy, zip, __ } from "ramda"
 import {
+  Digit,
   eliminateBasicFish,
   eliminateHiddenSubset,
   eliminateLockedCandidates,
   eliminateNakedSubset,
+  getCandidates,
+  GridIndex,
+  parseGrid,
+  Pencilmarks,
+  serializeGrid,
   solveFullHouse,
   solveHiddenSingle,
   solveLastDigit,
@@ -13,6 +19,7 @@ import {
 } from "sudoku-master"
 import { EliminationResult } from "sudoku-master/lib/solver/logical/eliminating/types"
 import { SolvingResult } from "sudoku-master/lib/solver/logical/solving/types"
+import { getCellIndexInGrid } from "sudoku-master/lib/utils/cell"
 
 type Solution = {
   grid: SudokuGrid
@@ -52,10 +59,40 @@ const nextOperation = curry(
   )
 )
 
-const solve = (solution: Solution) => {
+const applyOperation = (grid: SudokuGrid, operation: SolvingResult | EliminationResult) => {
+  // return cond(
+  //   [has('coord'), enterDigit(grid)]
+  // )(operation)
+}
+const sortByFirstItem = sortBy(prop<string>('0'))
 
+const enterDigit = curry((grid: SudokuGrid, solvingResult: SolvingResult): SudokuGrid => {
+  let digits: [GridIndex, Digit][] = Array.from(grid.digits)
+  const index: GridIndex = getCellIndexInGrid([solvingResult.coord[0], solvingResult.coord[1]])
+  digits = append([index, solvingResult.digit], digits)
+  digits = sortByFirstItem(digits)
+  return { ...grid, digits: new Map(digits) }
+})
+
+const eliminateInvalidCandidates = (grid: SudokuGrid): SudokuGrid => {
+  const knownCandidates = Array.from(grid.candidates.entries())
+  console.log(knownCandidates)
+  grid = parseGrid(serializeGrid(grid)!)!
+  const calculatedCandidates = Array.from(getCandidates(grid.digits).entries())
+  console.log(calculatedCandidates)
+  const zipped = zip(knownCandidates, calculatedCandidates)
+  let deepIntersection: [GridIndex, Pencilmarks][] = Array.from(map((items) => [items[0][0], intersection(items[0][1], items[1][1])], zipped))
+  console.log(deepIntersection)
+  deepIntersection = filter(propEq('length', 2), deepIntersection)
+  console.log(deepIntersection)
+  const newCandidates = (new Map(deepIntersection))
+  return { ...grid, candidates: newCandidates }
 }
 
-export { eliminationTechniques, nextOperation, solvingTechniques }
+
+const solve = (solution: Solution) => {
+}
+
+export { applyOperation, eliminateInvalidCandidates, eliminationTechniques, enterDigit, nextOperation, solvingTechniques }
 
 export default solve
