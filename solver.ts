@@ -1,4 +1,4 @@
-import { append, curry, filter, intersection, map, prop, propEq, reduce, reduced, sortBy, zip, __ } from "ramda"
+import { append, curry, filter, find, intersection, isEmpty, map, not, nth, pipe, prop, propEq, reduce, reduced, sortBy, uniq, __ } from "ramda"
 import {
   Digit,
   eliminateBasicFish,
@@ -74,17 +74,24 @@ const enterDigit = curry((grid: SudokuGrid, solvingResult: SolvingResult): Sudok
   return { ...grid, digits: new Map(digits) }
 })
 
+function intersectPairs(list1: [GridIndex, Pencilmarks][], list2: [GridIndex, Pencilmarks][]) {
+  let keys = uniq(intersection(map(nth(0), list1), map(nth(0), list2)))
+  // keys = sort(comparator(lt), keys)
+  return map(gridIndex => [
+    gridIndex,
+    intersection(
+      find(propEq(0, gridIndex), list1)![1],
+      find(propEq(0, gridIndex), list2)![1]
+    )
+  ], keys)
+}
+
 const eliminateInvalidCandidates = (grid: SudokuGrid): SudokuGrid => {
   const knownCandidates = Array.from(grid.candidates.entries())
-  console.log(knownCandidates)
-  grid = parseGrid(serializeGrid(grid)!)!
+  grid = parseGrid(serializeGrid(grid, { pencilmarks: true })!)!
   const calculatedCandidates = Array.from(getCandidates(grid.digits).entries())
-  console.log(calculatedCandidates)
-  const zipped = zip(knownCandidates, calculatedCandidates)
-  let deepIntersection: [GridIndex, Pencilmarks][] = Array.from(map((items) => [items[0][0], intersection(items[0][1], items[1][1])], zipped))
-  console.log(deepIntersection)
-  deepIntersection = filter(propEq('length', 2), deepIntersection)
-  console.log(deepIntersection)
+  let deepIntersection = intersectPairs(knownCandidates, calculatedCandidates) as [GridIndex, Pencilmarks][]
+  deepIntersection = filter(pipe(nth(1), isEmpty, not), deepIntersection)
   const newCandidates = (new Map(deepIntersection))
   return { ...grid, candidates: newCandidates }
 }
