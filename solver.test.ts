@@ -567,15 +567,27 @@ describe('nextOperation', () => {
     })
   })
   
-  xdescribe('applyOperation', () => {
+  describe('applyOperation', () => {
     it('enters digits from a SolvingResult', () => {
-      const grid = prepareGrid('672105398145000672089002451063574819958000743014090526007200084026000035001409067')!
-      const solvingResult: SolvingResult = { coord: [0, 4], digit: 4, technique: 'Full House' }
+      const grid = prepareGrid('700104028406070015108030674000301700387000149000709000852017403900000507673400001')!
+      const solvingResult: SolvingResult = { coord: [0, 4], digit: 6, technique: 'Hidden Single' }
 
       const applied = applyOperation(grid, solvingResult)
 
-      expect(applied).toEqual(
-        prepareGrid('672145398145000672089002451063574819958000743014090526007200084026000035001409067')
+      expect(Array.from(applied.digits)).toEqual(
+        [
+          [ 0, 7 ],  [ 3, 1 ],  [ 4, 6 ],  [ 5, 4 ],
+          [ 7, 2 ],  [ 8, 8 ],  [ 9, 4 ],  [ 11, 6 ],
+          [ 13, 7 ], [ 16, 1 ], [ 17, 5 ], [ 18, 1 ],
+          [ 20, 8 ], [ 22, 3 ], [ 24, 6 ], [ 25, 7 ],
+          [ 26, 4 ], [ 30, 3 ], [ 32, 1 ], [ 33, 7 ],
+          [ 36, 3 ], [ 37, 8 ], [ 38, 7 ], [ 42, 1 ],
+          [ 43, 4 ], [ 44, 9 ], [ 48, 7 ], [ 50, 9 ],
+          [ 54, 8 ], [ 55, 5 ], [ 56, 2 ], [ 58, 1 ],
+          [ 59, 7 ], [ 60, 4 ], [ 62, 3 ], [ 63, 9 ],
+          [ 69, 5 ], [ 71, 7 ], [ 72, 6 ], [ 73, 7 ],
+          [ 74, 3 ], [ 75, 4 ], [ 80, 1 ]
+        ]
       )
     })
   })

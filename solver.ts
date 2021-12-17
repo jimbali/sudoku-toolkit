@@ -1,4 +1,4 @@
-import { append, curry, filter, find, intersection, isEmpty, map, not, nth, pipe, prop, propEq, reduce, reduced, sortBy, uniq, __ } from "ramda"
+import { append, cond, curry, filter, find, has, intersection, isEmpty, map, not, nth, pipe, prop, propEq, reduce, reduced, sortBy, uniq, __ } from "ramda"
 import {
   Digit,
   eliminateBasicFish,
@@ -60,11 +60,18 @@ const nextOperation = curry(
 )
 
 const applyOperation = (grid: SudokuGrid, operation: SolvingResult | EliminationResult) => {
-  // return cond(
-  //   [has('coord'), enterDigit(grid)]
-  // )(operation)
+  return cond([
+    [has('coord'), enterDigit(grid)],
+    [has('eliminations'), eliminateDigits(grid)]
+  ])(operation)
 }
+
 const sortByFirstItem = sortBy(prop<string>('0'))
+
+const eliminateDigits = curry((grid: SudokuGrid, eliminationResult: EliminationResult): SudokuGrid => {
+  // TODO
+  return grid
+})
 
 const enterDigit = curry((grid: SudokuGrid, solvingResult: SolvingResult): SudokuGrid => {
   let digits: [GridIndex, Digit][] = Array.from(grid.digits)
