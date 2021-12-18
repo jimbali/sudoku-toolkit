@@ -1,4 +1,5 @@
 import { Digit, getCandidates, GridIndex, parseGrid, Pencilmarks, serializeGrid, SudokuGrid } from 'sudoku-master'
+import { EliminationResult } from 'sudoku-master/lib/solver/logical/eliminating/types'
 import { SolvingResult } from 'sudoku-master/lib/solver/logical/solving/types'
 import solve, { applyOperation, eliminateInvalidCandidates, eliminationTechniques, enterDigit, nextOperation, solvingTechniques } from './solver'
 
@@ -587,6 +588,113 @@ describe('nextOperation', () => {
           [ 59, 7 ], [ 60, 4 ], [ 62, 3 ], [ 63, 9 ],
           [ 69, 5 ], [ 71, 7 ], [ 72, 6 ], [ 73, 7 ],
           [ 74, 3 ], [ 75, 4 ], [ 80, 1 ]
+        ]
+      )
+    })
+
+    it('enters candidates from an EliminationResult', () => {
+      const grid = prepareGrid('309000470205709803087030900754861239600924758928357641000000596502106387806503124')!
+      const eliminationResult: EliminationResult = {
+        technique: 'Naked Pair',
+        eliminations: [
+          {
+            digit: 2,
+            coords: [[2, 3]]
+          }
+        ],
+        implication: {
+          type: 1,
+          cells: [[2, 5], [2, 8]],
+          digits: [2, 5]
+        }
+      }
+
+      const applied = applyOperation(grid, eliminationResult)
+
+      expect(Array.from(applied.candidates)).toEqual(
+        [
+          [ 1, [ 1, 6 ] ],        [ 3, [ 2, 6 ] ],
+          [ 4, [ 1, 8 ] ],        [ 5, [ 2, 5, 8 ] ],
+          [ 8, [ 2, 5 ] ],        [ 10, [ 1, 4, 6 ] ],
+          [ 13, [ 1, 4 ] ],       [ 16, [ 1, 6 ] ],
+          [ 18, [ 1, 4 ] ],       [ 21, [ 4, 6 ] ],
+          [ 23, [ 2, 5 ] ],       [ 25, [ 1, 6 ] ],
+          [ 26, [ 2, 5 ] ],       [ 37, [ 1, 3 ] ],
+          [ 38, [ 1, 3 ] ],       [ 54, [ 1, 4 ] ],
+          [ 55, [ 1, 3, 4, 7 ] ], [ 56, [ 1, 3 ] ],
+          [ 57, [ 2, 4 ] ],       [ 58, [ 4, 7, 8 ] ],
+          [ 59, [ 2, 8 ] ],       [ 64, [ 4, 9 ] ],
+          [ 67, [ 4, 9 ] ],       [ 73, [ 7, 9 ] ],
+          [ 76, [ 7, 9 ] ]
+        ]
+      )
+    })
+
+
+    it('enters multiple candidates from an EliminationResult', () => {
+      const grid = parseGrid(`
+        +-------------------+--------------+----------------+
+        | 139   168  168    | 7   2   4    | 13689 368 5    |
+        | 359   2    48     | 569 1   359  | 48    7   369  |
+        | 13579 1467 1567   | 569 8   359  | 1369  346 2    |
+        +-------------------+--------------+----------------+
+        | 178   9    147    | 18  3   6    | 2     5   47   |
+        | 6     14   2      | 59  7   159  | 39    34  8    |
+        | 78    5    3      | 2   4   89   | 679   1   69   |
+        +-------------------+--------------+----------------+
+        | 4     1678 15678  | 3   9   18   | 5678  2   16   |
+        | 157   3    1578   | 18  6   2    | 4578  9   47   |
+        | 2     168  9      | 4   5   7    | 368   368 136  |
+        +-------------------+--------------+----------------+
+      
+      `)!
+
+      const eliminationResult: EliminationResult = {
+        technique: 'Hidden Triple',
+        eliminations: [
+          {
+            digit: 6,
+            coords: [[6, 6]]
+          },
+          {
+            digit: 8,
+            coords: [[6, 6], [7, 6]]
+          }
+        ],
+        implication: {
+          type: 1,
+          cells: [[6, 6], [7, 6], [7, 8]],
+          digits: [4, 5, 7]
+        }
+      }
+
+      const applied = applyOperation(grid, eliminationResult)
+
+      expect(Array.from(applied.candidates)).toEqual(
+        [
+          [ 0, [ 1, 3, 9 ] ],           [ 1, [ 1, 6, 8 ] ],
+          [ 2, [ 1, 6, 8 ] ],           [ 6, [ 1, 3, 6, 8, 9 ] ],
+          [ 7, [ 3, 6, 8 ] ],           [ 9, [ 3, 5, 9 ] ],
+          [ 11, [ 4, 8 ] ],             [ 12, [ 5, 6, 9 ] ],
+          [ 14, [ 3, 5, 9 ] ],          [ 15, [ 4, 8 ] ],
+          [ 17, [ 3, 6, 9 ] ],          [ 18, [ 1, 3, 5, 7, 9 ] ],
+          [ 19, [ 1, 4, 6, 7 ] ],       [ 20, [ 1, 5, 6, 7 ] ],
+          [ 21, [ 5, 6, 9 ] ],          [ 23, [ 3, 5, 9 ] ],
+          [ 24, [ 1, 3, 6, 9 ] ],       [ 25, [ 3, 4, 6 ] ],
+          [ 27, [ 1, 7, 8 ] ],          [ 29, [ 1, 4, 7 ] ],
+          [ 30, [ 1, 8 ] ],             [ 35, [ 4, 7 ] ],
+          [ 37, [ 1, 4 ] ],             [ 39, [ 5, 9 ] ],
+          [ 41, [ 1, 5, 9 ] ],          [ 42, [ 3, 9 ] ],
+          [ 43, [ 3, 4 ] ],             [ 45, [ 7, 8 ] ],
+          [ 50, [ 8, 9 ] ],             [ 51, [ 6, 7, 9 ] ],
+          [ 53, [ 6, 9 ] ],             [ 55, [ 1, 6, 7, 8 ] ],
+          [ 56, [ 1, 5, 6, 7, 8 ] ],    [ 59, [ 1, 8 ] ],
+          [ 60, [ 5, 7 ] ],             [ 62, [ 1, 6 ] ],
+          [ 63, [ 1, 5, 7 ] ],          [ 65, [ 1, 5, 7, 8 ] ],
+          [ 66, [ 1, 8 ] ],             [ 69, [ 4, 5, 7 ] ],
+          [ 71, [ 4, 7 ] ],             [ 73, [ 1, 6, 8 ] ],
+          [ 78, [ 3, 6, 8 ] ],          [ 79, [ 3, 6, 8 ] ],
+          [ 80, [ 1, 3, 6 ] ]
         ]
       )
     })

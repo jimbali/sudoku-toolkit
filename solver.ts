@@ -1,5 +1,6 @@
-import { append, cond, curry, filter, find, has, intersection, isEmpty, map, not, nth, pipe, prop, propEq, reduce, reduced, sortBy, uniq, __ } from "ramda"
+import { append, cond, curry, equals, filter, find, findIndex, has, intersection, isEmpty, map, not, nth, pipe, prop, propEq, reduce, reduced, reject, sortBy, uniq, __ } from "ramda"
 import {
+  CellCoord,
   Digit,
   eliminateBasicFish,
   eliminateHiddenSubset,
@@ -17,7 +18,7 @@ import {
   SubsetType,
   SudokuGrid
 } from "sudoku-master"
-import { EliminationResult } from "sudoku-master/lib/solver/logical/eliminating/types"
+import { EliminationCandidate, EliminationResult } from "sudoku-master/lib/solver/logical/eliminating/types"
 import { SolvingResult } from "sudoku-master/lib/solver/logical/solving/types"
 import { getCellIndexInGrid } from "sudoku-master/lib/utils/cell"
 
@@ -68,17 +69,29 @@ const applyOperation = (grid: SudokuGrid, operation: SolvingResult | Elimination
 
 const sortByFirstItem = sortBy(prop<string>('0'))
 
-const eliminateDigits = curry((grid: SudokuGrid, eliminationResult: EliminationResult): SudokuGrid => {
-  // TODO
-  return grid
-})
-
 const enterDigit = curry((grid: SudokuGrid, solvingResult: SolvingResult): SudokuGrid => {
   let digits: [GridIndex, Digit][] = Array.from(grid.digits)
   const index: GridIndex = getCellIndexInGrid([solvingResult.coord[0], solvingResult.coord[1]])
   digits = append([index, solvingResult.digit], digits)
   digits = sortByFirstItem(digits)
   return { ...grid, digits: new Map(digits) }
+})
+
+const eliminateDigits = curry((grid: SudokuGrid, eliminationResult: EliminationResult): SudokuGrid => {
+  const allCandidates: [GridIndex, Pencilmarks][] = Array.from(grid.candidates)
+
+  const newCandidates = reduce((candidatesMemo2: [GridIndex, Pencilmarks][], elimination: EliminationCandidate) => {
+    return reduce((candidatesMemo: [GridIndex, Pencilmarks][], coord: CellCoord) => {
+      const gridIndex: GridIndex = getCellIndexInGrid([coord[0], coord[1]])
+      const listIndex = findIndex(propEq(0, gridIndex), candidatesMemo)!
+      let candidateEntry = candidatesMemo[listIndex]
+      candidateEntry[1] = reject(equals(elimination.digit), candidateEntry[1])
+      candidatesMemo[listIndex] = candidateEntry
+      return candidatesMemo
+    }, candidatesMemo2, elimination.coords)
+  }, allCandidates, eliminationResult.eliminations)
+
+  return { ...grid, candidates: new Map(newCandidates) }
 })
 
 function intersectPairs(list1: [GridIndex, Pencilmarks][], list2: [GridIndex, Pencilmarks][]) {
