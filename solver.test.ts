@@ -535,34 +535,36 @@ describe('nextOperation', () => {
           [ 0, 6 ],  [ 1, 7 ],  [ 2, 2 ],  [ 3, 1 ],
           [ 4, 4 ],  [ 5, 5 ],  [ 6, 3 ],  [ 7, 9 ],
           [ 8, 8 ],  [ 9, 1 ],  [ 10, 4 ], [ 11, 5 ],
-          [ 15, 6 ], [ 16, 7 ], [ 17, 2 ], [ 18, 3 ],
-          [ 19, 8 ], [ 20, 9 ], [ 23, 2 ], [ 24, 4 ],
-          [ 25, 5 ], [ 26, 1 ], [ 27, 2 ], [ 28, 6 ],
-          [ 29, 3 ], [ 30, 5 ], [ 31, 7 ], [ 32, 4 ],
-          [ 33, 8 ], [ 34, 1 ], [ 35, 9 ], [ 36, 9 ],
-          [ 37, 5 ], [ 38, 8 ], [ 39, 6 ], [ 42, 7 ],
-          [ 43, 4 ], [ 44, 3 ], [ 45, 7 ], [ 46, 1 ],
+          [ 15, 6 ], [ 16, 7 ], [ 17, 2 ], [ 19, 8 ],
+          [ 20, 9 ], [ 23, 2 ], [ 24, 4 ], [ 25, 5 ],
+          [ 26, 1 ], [ 28, 6 ], [ 29, 3 ], [ 30, 5 ],
+          [ 31, 7 ], [ 32, 4 ], [ 33, 8 ], [ 34, 1 ],
+          [ 35, 9 ], [ 36, 9 ], [ 37, 5 ], [ 38, 8 ],
+          [ 42, 7 ], [ 43, 4 ], [ 44, 3 ], [ 46, 1 ],
           [ 47, 4 ], [ 49, 9 ], [ 51, 5 ], [ 52, 2 ],
           [ 53, 6 ], [ 56, 7 ], [ 57, 2 ], [ 61, 8 ],
           [ 62, 4 ], [ 64, 2 ], [ 65, 6 ], [ 70, 3 ],
-          [ 71, 5 ], [ 73, 3 ], [ 74, 1 ], [ 75, 4 ],
-          [ 77, 9 ], [ 78, 2 ], [ 79, 6 ], [ 80, 7 ]
+          [ 71, 5 ], [ 74, 1 ], [ 75, 4 ], [ 77, 9 ],
+          [ 79, 6 ], [ 80, 7 ]
         ]
       )
 
       expect(Array.from(applied.candidates)).toEqual(
         [
           [ 12, [ 3, 8, 9 ] ], [ 13, [ 3, 8 ] ],
-          [ 14, [ 3, 8 ] ],    [ 21, [ 7 ] ],
-          [ 22, [ 6 ] ],       [ 40, [ 1, 2 ] ],
-          [ 41, [ 1 ] ],       [ 48, [ 3, 8 ] ],
-          [ 50, [ 3, 8 ] ],    [ 54, [ 5 ] ],
-          [ 55, [ 9 ] ],       [ 58, [ 1, 3, 5, 6 ] ],
+          [ 14, [ 3, 8 ] ],    [ 18, [ 3 ] ],
+          [ 21, [ 3, 6, 7 ] ], [ 22, [ 3, 6 ] ],
+          [ 27, [ 2 ] ],       [ 39, [ 6 ] ],
+          [ 40, [ 1, 2, 6 ] ], [ 41, [ 1, 6 ] ],
+          [ 45, [ 7 ] ],       [ 48, [ 3, 8 ] ],
+          [ 50, [ 3, 8 ] ],    [ 54, [ 3, 5 ] ],
+          [ 55, [ 3, 9 ] ],    [ 58, [ 1, 3, 5, 6 ] ],
           [ 59, [ 1, 3, 6 ] ], [ 60, [ 1, 9 ] ],
           [ 63, [ 4, 8 ] ],    [ 66, [ 7, 8 ] ],
           [ 67, [ 1, 8 ] ],    [ 68, [ 1, 7, 8 ] ],
-          [ 69, [ 1, 9 ] ],    [ 72, [ 5, 8 ] ],
-          [ 76, [ 5, 8 ] ]
+          [ 69, [ 1, 9 ] ],    [ 72, [ 3, 5, 8 ] ],
+          [ 73, [ 3 ] ],       [ 76, [ 3, 5, 8 ] ],
+          [ 78, [ 2 ] ]
         ]
       )
     })
@@ -629,7 +631,6 @@ describe('nextOperation', () => {
         ]
       )
     })
-
 
     it('enters multiple candidates from an EliminationResult', () => {
       const grid = parseGrid(`
@@ -698,5 +699,62 @@ describe('nextOperation', () => {
         ]
       )
     })
+  })
+
+  it('solves a simple puzzle', () => {
+    const grid = prepareGrid('6721.5398145...672.89..2451.63574819958...743.14.9.526..72...84.26....35..14.9.67')!
+
+    const solution = solve({ grid, techniques: [] })
+
+    expect(serializeGrid(solution.grid)).toEqual(
+      '672145398145983672389762451263574819958621743714398526597236184426817935831459267'
+    )
+
+    expect(solution.techniques).toEqual(
+      [
+        'Full House',   'Full House',
+        'Full House',   'Full House',
+        'Last Digit',   'Naked Single',
+        'Full House',   'Last Digit',
+        'Naked Single', 'Last Digit',
+        'Naked Single', 'Full House',
+        'Last Digit',   'Naked Single',
+        'Full House',   'Last Digit',
+        'Full House',   'Full House',
+        'Naked Single', 'Full House',
+        'Full House',   'Last Digit',
+        'Full House',   'Full House',
+        'Last Digit',   'Full House',
+        'Full House',   'Full House'
+      ]
+    )
+  })
+
+  it('solves a moderate puzzle', () => {
+    const grid = prepareGrid('72.196..3...2.5....8...4.2........6.1965.3847.4........3.8.1.9....7.2...2..439.18')!
+
+    const solution = solve({ grid, techniques: [] })
+
+    expect(serializeGrid(solution.grid)).toEqual(
+      '725196483463285971981374526372948165196523847548617239634851792819762354257439618'
+    )
+
+    expect(solution.techniques).toEqual(
+      [
+        'Full House', 'Naked Single', 'Naked Single', 'Full House',
+        'Naked Single', 'Naked Single', 'Full House', 'Naked Single',
+        'Naked Single', 'Hidden Single', 'Naked Triple', 'Hidden Single',
+        'Full House', 'Hidden Single', 'Locked Candidates Type 1 (Pointing)',
+        'Hidden Single', 'Full House', 'Naked Single', 'Last Digit',
+        'Naked Single', 'Naked Single', 'Naked Single', 'Naked Single',
+        'Naked Single', 'Naked Single', 'Full House', 'Last Digit',
+        'Naked Single', 'Naked Single', 'Full House', 'Last Digit',
+        'Naked Single', 'Full House', 'Full House', 'Last Digit',
+        'Naked Single', 'Full House', 'Full House', 'Last Digit',
+        'Full House', 'Naked Single', 'Full House', 'Full House',
+        'Last Digit', 'Full House', 'Full House', 'Last Digit',
+        'Full House', 'Full House', 'Full House'
+      ]  
+    )
   })
 })
