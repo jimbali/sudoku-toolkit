@@ -133,11 +133,17 @@ const applyNext = curry((ops: Technique[], solutions: SolutionPair): SolutionPai
   const op = nextOperation(ops)(solutions.current.grid)
   if (!op) return { ...solutions, last: solutions.current }
 
-  const result = op[0] // TODO: each?
-  const newGrid = applyOperation(solutions.current.grid, result)
+  const newGrid = reduce(
+    (grid: SudokuGrid, i: EliminationResult | SolvingResult) => applyOperation(grid, i),
+    solutions.current.grid,
+    op
+  )
 
   return {
-    current: { grid: eliminateInvalidCandidates(newGrid), techniques: concat(solutions.current.techniques, [result.technique]) },
+    current: {
+      grid: eliminateInvalidCandidates(newGrid),
+      techniques: concat(solutions.current.techniques, [op[0].technique])
+    },
     last: solutions.current
   }
 })
