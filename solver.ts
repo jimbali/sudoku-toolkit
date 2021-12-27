@@ -9,6 +9,7 @@ import {
   getCandidates,
   GridIndex,
   Pencilmarks,
+  serializeGrid,
   solveFullHouse,
   solveHiddenSingle,
   solveLastDigit,
@@ -139,6 +140,9 @@ const applyNext = curry((ops: Technique[], solutions: SolutionPair): SolutionPai
     op
   )
 
+  // console.log(result)
+  // console.log(serializeGrid(newGrid))
+
   return {
     current: {
       grid: eliminateInvalidCandidates(newGrid),
@@ -152,10 +156,15 @@ const finished = (solutionPair: SolutionPair) =>
   equals(solutionPair.current.grid, solutionPair.last?.grid)
 
 const solve = (solution: Solution): Solution => {
+  if (solution.grid.candidates.size == 0) {
+    solution.grid = { ...solution.grid, candidates: getCandidates(solution.grid.digits) }
+  }
   const solved: SolutionPair = until(finished, applyNext(allTechniques), { current: solution })
   return solved.current
 }
 
 export { applyOperation, eliminateInvalidCandidates, eliminationTechniques, enterDigit, nextOperation, solvingTechniques }
+
+export type { Solution }
 
 export default solve

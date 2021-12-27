@@ -759,4 +759,23 @@ describe('solve', () => {
       ]  
     )
   })
+  
+  // it('solves a tough puzzle', () => {
+  //   // const grid = prepareGrid('3.9...4..2..7.9....87......75.86.2396..9.47.892835..41......59....1.6..7..6...1.4')!
+  //   const grid = prepareGrid('000470050300006000000000001000150020200000600000060000015000000000600300073008000')!
+  
+  //   const solution = solve({ grid, techniques: [] })
+  
+  //   expect(serializeGrid(solution.grid)).toEqual(
+  //     ''
+  //   )
+  
+  //   console.log(solution.techniques)
+  
+  //   // expect(solution.techniques).toEqual(
+  //   //   [
+        
+  //   //   ]  
+  //   // )
+  // })
 })

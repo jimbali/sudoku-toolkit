@@ -2,6 +2,24 @@
 # yarn lockfile v1
 
 
+"@algorithm.ts/dlx@^1.0.23":
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/@algorithm.ts/dlx/-/dlx-1.0.23.tgz#2c67069779eb93e622107d20f2aa855345beb0a4"
+  integrity sha512-zczfVc3oKSzy/gqqhPwnri2lC1GTDY9dWL1eelQBqIctq6r9lNzILHpMkO5x/T121m1TlhUBb3qvvpsvuPG0EQ==
+
+"@algorithm.ts/knuth-shuffle@^1.0.23":
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/@algorithm.ts/knuth-shuffle/-/knuth-shuffle-1.0.23.tgz#de3f782c9812e6d8af55e53f0aa207366800d73a"
+  integrity sha512-H3PLtDckbxpJiU3u55yheujyRxKscee5Fjl3ETqM6TW4dIZxKZ5eSJkK8LKw9OtORdmy0o4dx6Q7UDtQiFZpjw==
+
+"@algorithm.ts/sudoku@^1.0.23":
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/@algorithm.ts/sudoku/-/sudoku-1.0.23.tgz#d7bce08bad07b6b6c119ab5926ec09989b8a7bcb"
+  integrity sha512-kD3ZKCaobneYTRtMpNQ/Xxgk9g6skKwHdp+rRgbKDFLkdNlbPHEBAKu9bxlHnsvI9Rep3I9sqfgCJkItjcYfIg==
+  dependencies:
+    "@algorithm.ts/dlx" "^1.0.23"
+    "@algorithm.ts/knuth-shuffle" "^1.0.23"
+
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.12.13":
   version "7.12.13"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.12.13.tgz#dcfc826beef65e75c50e21d3837d7d95798dd658"

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@algorithm.ts/sudoku": "^1.0.23",
     "@types/node": "^14.14.14",
     "sudoku-master": "^0.0.3"
   },
