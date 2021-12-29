@@ -3,12 +3,37 @@ import { add, clone, countBy, filter, flatten, gt, join, map, prop, reduce, unti
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import solve, { Solution } from './solver'
 
+type Puzzle = {
+  gridString?: string,
+  solutionString?: string,
+  solved: boolean,
+  tally: {
+    'Full House'?: number,
+    'Last Digit'?: number,
+    'Naked Single'?: number,
+    'Hidden Single'?: number,
+    'Naked Pair'?: number,
+    'Naked Triple'?: number,
+    'Locked Pair'?: number,
+    'Locked Candidates Type 1 (Pointing)'?: number,
+    'Locked Candidates Type 2 (Claiming)'?: number,
+    'Hidden Pair'?: number,
+    'Hidden Triple'?: number,
+    'Naked Quadruple'?: number,
+    'Hidden Quadruple'?: number,
+    'X-Wing'?: number,
+    'Swordfish'?: number,
+    'Jellyfish'?: number,
+    'other'?: number
+  }
+}
+
 const creator = new SudokuCreator({ childMatrixSize: 3 })
 
-const isNicePuzzle = (memo: { solved: boolean, tally: any }) =>
-  memo.solved == true && memo.tally['X-Wing'] > 0
+const isNicePuzzle = (memo: Puzzle): boolean =>
+  memo.solved == true && memo.tally['X-Wing']! > 0
 
-const generateAndAnalyse = (memo: { solved: boolean, tally: string[] }) => {
+const generateAndAnalyse = (memo: Puzzle): Puzzle => {
 
   const puzzle = creator.createSudoku(0.8)
 
@@ -38,7 +63,7 @@ const generateAndAnalyse = (memo: { solved: boolean, tally: string[] }) => {
   
   console.log(tally)
 
-  return { solved, tally }
+  return { gridString, solutionString, solved, tally }
 }
 
 const nicePuzzle = until(isNicePuzzle, generateAndAnalyse, { solved: false, tally: {} })
