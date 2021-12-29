@@ -2,8 +2,11 @@ import { SudokuCreator } from '@algorithm.ts/sudoku'
 import { add, clone, countBy, filter, flatten, gt, join, map, prop, reduce, until, zip, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import solve, { Solution } from './solver'
+import { ObjectId } from 'mongodb'
+import { collections, connectToDatabase } from './database.service'
 
 type Puzzle = {
+  id?: ObjectId
   gridString?: string,
   solutionString?: string,
   solved: boolean,
@@ -33,9 +36,21 @@ const creator = new SudokuCreator({ childMatrixSize: 3 })
 const isNicePuzzle = (memo: Puzzle): boolean =>
   memo.solved == true && memo.tally['X-Wing']! > 0
 
+const savePuzzle = async (puzzle: Puzzle) => {
+  try {
+    const result = await collections.puzzles?.insertOne(puzzle)
+
+    result
+        ? console.log(`Successfully saved puzzle with id ${result.insertedId}`)
+        : console.log('Failed to save puzzle');
+  } catch (error) {
+      console.error(error)
+  }
+}
+
 const generateAndAnalyse = (memo: Puzzle): Puzzle => {
 
-  const puzzle = creator.createSudoku(0.8)
+  const puzzle = creator.createSudoku(0.7)
 
   const flattenedPuzzle = map(add(1), flatten(puzzle.puzzle))
   const gridString = join('', flattenedPuzzle)
@@ -66,9 +81,17 @@ const generateAndAnalyse = (memo: Puzzle): Puzzle => {
   return { gridString, solutionString, solved, tally }
 }
 
-const nicePuzzle = until(isNicePuzzle, generateAndAnalyse, { solved: false, tally: {} })
+connectToDatabase()
+  .then(() => {
+    const nicePuzzle = until(isNicePuzzle, generateAndAnalyse, { solved: false, tally: {} })
 
-console.log(nicePuzzle)
+    console.log(nicePuzzle)
+    
+    savePuzzle(nicePuzzle)
+  })
+  .catch((error: Error) => {
+      console.error('Database connection failed', error)
+  })
 
 const allTechniques = [
   'Full House',
@@ -102,5 +125,19 @@ const allTechniques = [
 //     'Naked Single': 19,
 //     'Last Digit': 7,
 //     'Full House': 20
+//   }
+// }
+
+// {
+//   gridString: '700000315000460000950001000000000008003907100000120000004090600010704030030010007',
+//   solutionString: '746289315321465789958371264192536478583947126467128593274893651619754832835612947',
+//   solved: true,
+//   tally: {
+//     'Naked Single': 17,
+//     'Full House': 21,
+//     'Hidden Single': 10,
+//     'Last Digit': 7,
+//     'Naked Pair': 1,
+//     'X-Wing': 1
 //   }
 // }
