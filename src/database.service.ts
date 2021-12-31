@@ -1,9 +1,14 @@
 import * as mongoDB from 'mongodb'
+import * as dotenv from 'dotenv'
 
 export const collections: { puzzles?: mongoDB.Collection } = {}
 
-export async function connectToDatabase () {
-  const client: mongoDB.MongoClient = new mongoDB.MongoClient('mongodb://127.0.0.1:27017')
+export async function connectToDatabase() {
+  dotenv.config()
+
+  console.log(process.env.MONGODB_URL)
+
+  const client: mongoDB.MongoClient = new mongoDB.MongoClient(process.env.MONGODB_URL!)
           
   await client.connect()
       
