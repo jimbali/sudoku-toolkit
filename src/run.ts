@@ -7,9 +7,9 @@ import { collections, connectToDatabase } from './database.service'
 
 type Puzzle = {
   id?: ObjectId
-  gridString?: string,
-  solutionString?: string,
-  solved: boolean,
+  gridString?: string
+  solutionString?: string
+  solved: boolean
   tally: {
     'Full House'?: number,
     'Last Digit'?: number,
@@ -29,12 +29,31 @@ type Puzzle = {
     'Jellyfish'?: number,
     'other'?: number
   }
+  intendedDifficulty?: number
+  givens?: number
 }
 
 const creator = new SudokuCreator({ childMatrixSize: 3 })
 
-const isNicePuzzle = (memo: Puzzle): boolean =>
-  memo.solved == true && memo.tally['X-Wing']! > 0
+const isNicePuzzle = (memo: Puzzle): boolean => {
+  if (memo.solved == false) return false
+
+  if (memo.tally['X-Wing']! > 0) return true
+
+  if (memo.tally['Swordfish']! > 0) return true
+
+  if (memo.tally['Jellyfish']! > 0) return true
+
+  if (memo.tally['Hidden Quadruple']! > 0) return true
+
+  if (memo.tally['Hidden Triple']! > 0) return true
+
+  if (memo.tally['Hidden Pair']! > 2) return true
+
+  if (memo.givens! <= 20) return true
+
+  return false
+}
 
 const savePuzzle = async (puzzle: Puzzle) => {
   try {
@@ -49,8 +68,8 @@ const savePuzzle = async (puzzle: Puzzle) => {
 }
 
 const generateAndAnalyse = (memo: Puzzle): Puzzle => {
-
-  const puzzle = creator.createSudoku(0.7)
+  const intendedDifficulty = (Math.random() * 0.4) + 0.6
+  const puzzle = creator.createSudoku(intendedDifficulty)
 
   const flattenedPuzzle = map(add(1), flatten(puzzle.puzzle))
   const gridString = join('', flattenedPuzzle)
@@ -68,7 +87,7 @@ const generateAndAnalyse = (memo: Puzzle): Puzzle => {
   const endString = serializeGrid(solution.grid!)
   
   console.log(serializeGrid(solution.grid!))
-  console.log(solution.techniques)
+  // console.log(solution.techniques)
   
   const solved = endString === solutionString
   
@@ -78,7 +97,7 @@ const generateAndAnalyse = (memo: Puzzle): Puzzle => {
   
   console.log(tally)
 
-  return { gridString, solutionString, solved, tally }
+  return { gridString, solutionString, solved, tally, intendedDifficulty, givens }
 }
 
 connectToDatabase()
