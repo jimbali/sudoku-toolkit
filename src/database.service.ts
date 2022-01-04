@@ -6,8 +6,6 @@ export const collections: { puzzles?: mongoDB.Collection } = {}
 export async function connectToDatabase() {
   dotenv.config()
 
-  console.log(process.env.MONGODB_URL)
-
   const client: mongoDB.MongoClient = new mongoDB.MongoClient(process.env.MONGODB_URL!)
           
   await client.connect()

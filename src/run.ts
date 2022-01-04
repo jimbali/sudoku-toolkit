@@ -1,9 +1,12 @@
 import { SudokuCreator } from '@algorithm.ts/sudoku'
-import { add, clone, countBy, filter, flatten, gt, join, map, prop, reduce, until, zip, __ } from 'ramda'
+import { add, clone, countBy, F, filter, flatten, gt, join, map, prop, reduce, until, zip, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import solve, { Solution } from './solver'
 import { ObjectId } from 'mongodb'
 import { collections, connectToDatabase } from './database.service'
+import Logger from './logger'
+
+const logger = new Logger('info')
 
 type Puzzle = {
   id?: ObjectId
@@ -56,18 +59,20 @@ const isNicePuzzle = (memo: Puzzle): boolean => {
 }
 
 const savePuzzle = async (puzzle: Puzzle) => {
+  logger.debug("Saving puzzle...")
   try {
     const result = await collections.puzzles?.insertOne(puzzle)
 
     result
-        ? console.log(`Successfully saved puzzle with id ${result.insertedId}`)
-        : console.log('Failed to save puzzle');
+        ? logger.log(`Successfully saved puzzle with id ${result.insertedId} @ ${Date.now()}`)
+        : logger.error('Failed to save puzzle')
   } catch (error) {
-      console.error(error)
+      logger.error(error)
   }
+  logger.debug('next...')
 }
 
-const generateAndAnalyse = (memo: Puzzle): Puzzle => {
+const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
   const intendedDifficulty = (Math.random() * 0.4) + 0.6
   const puzzle = creator.createSudoku(intendedDifficulty)
 
@@ -75,10 +80,10 @@ const generateAndAnalyse = (memo: Puzzle): Puzzle => {
   const gridString = join('', flattenedPuzzle)
   const solutionString = join('', map(add(1), flatten(puzzle.solution)))
 
-  console.log(gridString)
+  logger.debug(gridString)
   
   const givens = filter(gt(__, 0), flattenedPuzzle).length
-  console.log(givens + ' givens')
+  logger.debug(givens + ' givens')
   
   let solution: Solution = { grid: parseGrid(gridString)!, techniques: [] }
   
@@ -86,30 +91,44 @@ const generateAndAnalyse = (memo: Puzzle): Puzzle => {
   
   const endString = serializeGrid(solution.grid!)
   
-  console.log(serializeGrid(solution.grid!))
-  // console.log(solution.techniques)
+  logger.debug(endString)
+  // logger.debug(solution.techniques)
   
   const solved = endString === solutionString
   
-  console.log(solved ? 'solved' : 'not solved')
+  logger.debug(solved ? 'solved' : 'not solved')
 
   const tally = countBy((i) => i as string, solution.techniques)
-  
-  console.log(tally)
+  logger.debug(tally)
+
+  logger.debug(`Found ${count} puzzles`)
 
   return { gridString, solutionString, solved, tally, intendedDifficulty, givens }
 }
 
-connectToDatabase()
-  .then(() => {
-    const nicePuzzle = until(isNicePuzzle, generateAndAnalyse, { solved: false, tally: {} })
+const findPuzzle = async () => {
+  logger.log("Searching for a new puzzle...")
+  const nicePuzzle = until(isNicePuzzle, generateAndAnalyse, { solved: false, tally: {} })
 
-    console.log(nicePuzzle)
-    
-    savePuzzle(nicePuzzle)
-  })
+  count++
+
+  logger.log(nicePuzzle)
+  
+  await savePuzzle(nicePuzzle)
+}
+
+const minePuzzles = async () => {
+  while (true) {
+    await findPuzzle()
+  }
+}
+
+let count = 0
+
+connectToDatabase()
+  .then(minePuzzles)
   .catch((error: Error) => {
-      console.error('Database connection failed', error)
+      logger.error('Database connection failed', error)
   })
 
 const allTechniques = [
