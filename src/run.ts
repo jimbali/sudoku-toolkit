@@ -1,10 +1,13 @@
 import { SudokuCreator } from '@algorithm.ts/sudoku'
-import { add, clone, countBy, F, filter, flatten, gt, join, map, prop, reduce, until, zip, __ } from 'ramda'
+import { add, countBy, filter, flatten, gt, join, map, until, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import solve, { Solution } from './solver'
 import { ObjectId } from 'mongodb'
-import { collections, connectToDatabase } from './database.service'
 import Logger from './logger'
+import * as mongoDb from 'mongodb'
+import * as dotenv from 'dotenv'
+
+dotenv.config()
 
 const logger = new Logger('info')
 
@@ -60,16 +63,30 @@ const isNicePuzzle = (memo: Puzzle): boolean => {
 
 const savePuzzle = async (puzzle: Puzzle) => {
   logger.debug("Saving puzzle...")
+  
+  const client: mongoDb.MongoClient = new mongoDb.MongoClient(process.env.MONGODB_URL!)
+          
+  await client.connect()
+      
+  const db: mongoDb.Db = client.db('sudoku')
+  const puzzlesCollection: mongoDb.Collection = db.collection('puzzles')
+      
+  logger.log(
+    `Successfully connected to database: ${db.databaseName} and collection: ${puzzlesCollection.collectionName}`
+  )
+
   try {
-    const result = await collections.puzzles?.insertOne(puzzle)
+    const result = await puzzlesCollection.insertOne(puzzle)
 
     result
         ? logger.log(`Successfully saved puzzle with id ${result.insertedId} @ ${Date.now()}`)
         : logger.error('Failed to save puzzle')
   } catch (error) {
       logger.error(error)
+  } finally {
+    logger.log('Disconnecting from DB...')
+    client.close()
   }
-  logger.debug('next...')
 }
 
 const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
@@ -125,11 +142,7 @@ const minePuzzles = async () => {
 
 let count = 0
 
-connectToDatabase()
-  .then(minePuzzles)
-  .catch((error: Error) => {
-      logger.error('Database connection failed', error)
-  })
+minePuzzles()
 
 const allTechniques = [
   'Full House',
