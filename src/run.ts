@@ -54,7 +54,15 @@ const isNicePuzzle = (memo: Puzzle): boolean => {
 
   if (memo.tally['Hidden Triple']! > 0) return true
 
-  if (memo.tally['Hidden Pair']! > 2) return true
+  if (memo.tally['Hidden Pair']! > 0) return true
+
+  if (memo.tally['Locked Pair']! > 0) return true
+
+  if (memo.tally['Naked Pair']! > 0) return true
+
+  if (memo.tally['Naked Triple']! > 0) return true
+
+  if (memo.tally['Naked Quadruple']! > 0) return true
 
   if (memo.givens! <= 20) return true
 
