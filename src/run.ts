@@ -1,12 +1,11 @@
 import { SudokuCreator } from '@algorithm.ts/sudoku'
-import { add, any, countBy, filter, flatten, forEach, gt, join, map, reduce, Reduced, reduced, until, __ } from 'ramda'
+import { add, any, countBy, curry, filter, flatten, gt, join, map, until, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import solve, { Solution } from './solver'
 import { ObjectId } from 'mongodb'
 import Logger from './logger'
 import * as mongoDb from 'mongodb'
 import * as dotenv from 'dotenv'
-import { memoryUsage } from 'process'
 
 dotenv.config()
 
@@ -36,8 +35,8 @@ type Puzzle = {
   id?: ObjectId
   gridString?: string
   solutionString?: string
-  solved: boolean
-  tally: Tally
+  solved?: boolean
+  tally?: Tally
   intendedDifficulty?: number
   givens?: number
   calculatedDifficulty?: string
@@ -61,9 +60,9 @@ const rate = (puzzle: Puzzle) => {
     'Naked Triple'
   ]
   let difficulty = 'Easy'
-  if (any((technique) => puzzle.tally[technique]! > 0, hardTechniques)) difficulty = 'Hard'
-  else if (puzzle.tally['Hidden Pair']! > 2) difficulty = 'Hard'
-  else if (any((technique) => puzzle.tally[technique]! > 0, mediumTechniques)) difficulty = 'Medium'
+  if (any((technique) => puzzle.tally![technique]! > 0, hardTechniques)) difficulty = 'Hard'
+  else if (puzzle.tally!['Hidden Pair']! > 2) difficulty = 'Hard'
+  else if (any((technique) => puzzle.tally![technique]! > 0, mediumTechniques)) difficulty = 'Medium'
 
   return difficulty
 }
@@ -106,7 +105,7 @@ const savePuzzle = async (puzzle: Puzzle) => {
   }
 }
 
-const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
+const createPuzzle = (): Puzzle => {
   const intendedDifficulty = (Math.random() * 0.4) + 0.6
   const board = creator.createSudoku(intendedDifficulty)
 
@@ -118,8 +117,14 @@ const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
   
   const givens = filter(gt(__, 0), flattenedPuzzle).length
   logger.debug(givens + ' givens')
+
+  return { intendedDifficulty, gridString, solutionString, givens }
+}
+
+const getAndAnalysePuzzle = curry((getter: (() => Puzzle), _memo: Puzzle): Puzzle => {
+  let puzzle = getter()
   
-  let solution: Solution = { grid: parseGrid(gridString)!, techniques: [] }
+  let solution: Solution = { grid: parseGrid(puzzle.gridString!)!, techniques: [] }
   
   solution = solve(solution)
   
@@ -128,14 +133,14 @@ const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
   logger.debug(endString)
   // logger.debug(solution.techniques)
   
-  const solved = endString === solutionString
+  puzzle.solved = endString === puzzle.solutionString
   
-  logger.debug(solved ? 'solved' : 'not solved')
+  logger.debug(puzzle.solved ? 'solved' : 'not solved')
 
-  const tally = countBy((i) => i as string, solution.techniques)
-  logger.debug(tally)
+  puzzle.tally = countBy((i) => i as string, solution.techniques)
+  logger.debug(puzzle.tally)
 
-  let puzzle: Puzzle = { gridString, solutionString, solved, tally, intendedDifficulty, givens }
+  // let puzzle: Puzzle = { gridString, solutionString, solved, tally, intendedDifficulty, givens }
 
   puzzle.calculatedDifficulty = rate(puzzle)
   logger.debug(puzzle.calculatedDifficulty)
@@ -143,7 +148,9 @@ const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
   logger.debug(`Found ${count} puzzles`)
 
   return puzzle
-}
+})
+
+const generateAndAnalyse = getAndAnalysePuzzle(createPuzzle)
 
 const findPuzzle = async () => {
   logger.log("Searching for a new puzzle...")
