@@ -1,70 +1,79 @@
 import { SudokuCreator } from '@algorithm.ts/sudoku'
-import { add, countBy, filter, flatten, gt, join, map, until, __ } from 'ramda'
+import { add, any, countBy, filter, flatten, forEach, gt, join, map, reduce, Reduced, reduced, until, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import solve, { Solution } from './solver'
 import { ObjectId } from 'mongodb'
 import Logger from './logger'
 import * as mongoDb from 'mongodb'
 import * as dotenv from 'dotenv'
+import { memoryUsage } from 'process'
 
 dotenv.config()
 
 const logger = new Logger('info')
+
+type Tally = {
+  'Full House'?: number,
+  'Last Digit'?: number,
+  'Naked Single'?: number,
+  'Hidden Single'?: number,
+  'Naked Pair'?: number,
+  'Naked Triple'?: number,
+  'Locked Pair'?: number,
+  'Locked Candidates Type 1 (Pointing)'?: number,
+  'Locked Candidates Type 2 (Claiming)'?: number,
+  'Hidden Pair'?: number,
+  'Hidden Triple'?: number,
+  'Naked Quadruple'?: number,
+  'Hidden Quadruple'?: number,
+  'X-Wing'?: number,
+  'Swordfish'?: number,
+  'Jellyfish'?: number,
+  'other'?: number
+}
 
 type Puzzle = {
   id?: ObjectId
   gridString?: string
   solutionString?: string
   solved: boolean
-  tally: {
-    'Full House'?: number,
-    'Last Digit'?: number,
-    'Naked Single'?: number,
-    'Hidden Single'?: number,
-    'Naked Pair'?: number,
-    'Naked Triple'?: number,
-    'Locked Pair'?: number,
-    'Locked Candidates Type 1 (Pointing)'?: number,
-    'Locked Candidates Type 2 (Claiming)'?: number,
-    'Hidden Pair'?: number,
-    'Hidden Triple'?: number,
-    'Naked Quadruple'?: number,
-    'Hidden Quadruple'?: number,
-    'X-Wing'?: number,
-    'Swordfish'?: number,
-    'Jellyfish'?: number,
-    'other'?: number
-  }
+  tally: Tally
   intendedDifficulty?: number
   givens?: number
+  calculatedDifficulty?: string
 }
 
 const creator = new SudokuCreator({ childMatrixSize: 3 })
 
-const isNicePuzzle = (memo: Puzzle): boolean => {
-  if (memo.solved == false) return false
+const rate = (puzzle: Puzzle) => {
+  const hardTechniques: (keyof Tally)[] = [
+    'X-Wing',
+    'Swordfish',
+    'Jellyfish',
+    'Hidden Quadruple',
+    'Hidden Triple',
+    'Naked Quadruple'
+  ]
+  const mediumTechniques: (keyof Tally)[] = [
+    'Hidden Pair',
+    'Locked Pair',
+    'Naked Pair',
+    'Naked Triple'
+  ]
+  let difficulty = 'Easy'
+  if (any((technique) => puzzle.tally[technique]! > 0, hardTechniques)) difficulty = 'Hard'
+  else if (puzzle.tally['Hidden Pair']! > 2) difficulty = 'Hard'
+  else if (any((technique) => puzzle.tally[technique]! > 0, mediumTechniques)) difficulty = 'Medium'
 
-  if (memo.tally['X-Wing']! > 0) return true
+  return difficulty
+}
 
-  if (memo.tally['Swordfish']! > 0) return true
+const isNicePuzzle = (puzzle: Puzzle): boolean => {
+  if (puzzle.solved == false) return false
 
-  if (memo.tally['Jellyfish']! > 0) return true
+  if (['Hard', 'Medium'].includes(puzzle.calculatedDifficulty!)) return true
 
-  if (memo.tally['Hidden Quadruple']! > 0) return true
-
-  if (memo.tally['Hidden Triple']! > 0) return true
-
-  if (memo.tally['Hidden Pair']! > 0) return true
-
-  if (memo.tally['Locked Pair']! > 0) return true
-
-  if (memo.tally['Naked Pair']! > 0) return true
-
-  if (memo.tally['Naked Triple']! > 0) return true
-
-  if (memo.tally['Naked Quadruple']! > 0) return true
-
-  if (memo.givens! <= 20) return true
+  if (puzzle.givens! <= 20) return true
 
   return false
 }
@@ -99,11 +108,11 @@ const savePuzzle = async (puzzle: Puzzle) => {
 
 const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
   const intendedDifficulty = (Math.random() * 0.4) + 0.6
-  const puzzle = creator.createSudoku(intendedDifficulty)
+  const board = creator.createSudoku(intendedDifficulty)
 
-  const flattenedPuzzle = map(add(1), flatten(puzzle.puzzle))
+  const flattenedPuzzle = map(add(1), flatten(board.puzzle))
   const gridString = join('', flattenedPuzzle)
-  const solutionString = join('', map(add(1), flatten(puzzle.solution)))
+  const solutionString = join('', map(add(1), flatten(board.solution)))
 
   logger.debug(gridString)
   
@@ -126,9 +135,14 @@ const generateAndAnalyse = (_memo: Puzzle): Puzzle => {
   const tally = countBy((i) => i as string, solution.techniques)
   logger.debug(tally)
 
+  let puzzle: Puzzle = { gridString, solutionString, solved, tally, intendedDifficulty, givens }
+
+  puzzle.calculatedDifficulty = rate(puzzle)
+  logger.debug(puzzle.calculatedDifficulty)
+
   logger.debug(`Found ${count} puzzles`)
 
-  return { gridString, solutionString, solved, tally, intendedDifficulty, givens }
+  return puzzle
 }
 
 const findPuzzle = async () => {
