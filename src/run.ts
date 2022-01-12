@@ -70,7 +70,9 @@ const rate = (puzzle: Puzzle) => {
 const isNicePuzzle = (puzzle: Puzzle): boolean => {
   if (puzzle.solved == false) return false
 
-  if (['Hard', 'Medium'].includes(puzzle.calculatedDifficulty!)) return true
+  const desiredDifficulties = process.env.DESIRED_DIFFICULTIES!.split(',')
+
+  if (desiredDifficulties.includes(puzzle.calculatedDifficulty!)) return true
 
   if (puzzle.givens! <= 20) return true
 
