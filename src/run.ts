@@ -32,7 +32,7 @@ type Tally = {
 }
 
 type Puzzle = {
-  id?: ObjectId
+  _id?: ObjectId
   gridString?: string
   solutionString?: string
   solved?: boolean
@@ -92,16 +92,48 @@ const savePuzzle = async (puzzle: Puzzle) => {
   )
 
   try {
-    const result = await puzzlesCollection.insertOne(puzzle)
-
-    result
-        ? logger.log(`Successfully saved puzzle with id ${result.insertedId} @ ${Date.now()}`)
-        : logger.error('Failed to save puzzle')
+    if (puzzle._id) {
+      const result = await puzzlesCollection.replaceOne({ _id: puzzle._id }, puzzle)
+      result
+          ? logger.log(`Successfully updated puzzle with id ${puzzle._id} @ ${Date.now()}`)
+          : logger.error('Failed to save puzzle')
+    } else {
+      const result = await puzzlesCollection.insertOne(puzzle)
+      result
+          ? logger.log(`Successfully saved new puzzle with id ${result.insertedId} @ ${Date.now()}`)
+          : logger.error('Failed to save puzzle')
+    }
   } catch (error) {
       logger.error(error)
   } finally {
     logger.log('Disconnecting from DB...')
     client.close()
+  }
+}
+
+const getAllPuzzles = async () => {
+  const client: mongoDb.MongoClient = new mongoDb.MongoClient(process.env.MONGODB_URL!)
+          
+  await client.connect()
+      
+  const db: mongoDb.Db = client.db('sudoku')
+  const puzzlesCollection: mongoDb.Collection = db.collection('puzzles')
+      
+  logger.log(
+    `Successfully connected to database: ${db.databaseName} and collection: ${puzzlesCollection.collectionName}`
+  )
+
+  try {
+    const result = await puzzlesCollection.find({})
+
+    result
+        ? logger.log(`Successfully found puzzles`)
+        : logger.error('Failed to find puzzles')
+    
+    return result
+    
+  } catch (error) {
+      logger.error(error)
   }
 }
 
@@ -169,9 +201,25 @@ const minePuzzles = async () => {
   }
 }
 
+const rateExistingPuzzles = async () => {
+  const cursor = await getAllPuzzles()
+
+  for await (const doc of cursor!) {
+    const puzzle = doc as Puzzle
+    puzzle.calculatedDifficulty = rate(puzzle)
+    await savePuzzle(puzzle)
+  }
+
+  process.exit()
+}
+
 let count = 0
 
-minePuzzles()
+if (process.argv.includes('--rate')) {
+  rateExistingPuzzles()
+} else {
+  minePuzzles()
+}
 
 const allTechniques = [
   'Full House',
