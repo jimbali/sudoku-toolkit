@@ -1,17 +1,7 @@
 import { Digit, getCandidates, GridIndex, parseGrid, Pencilmarks, serializeGrid, SudokuGrid } from 'sudoku-master'
 import { EliminationResult } from 'sudoku-master/lib/solver/logical/eliminating/types'
 import { SolvingResult } from 'sudoku-master/lib/solver/logical/solving/types'
-import solve, { applyOperation, eliminateInvalidCandidates, eliminationTechniques, enterDigit, nextOperation, solvingTechniques } from './solver'
-
-// describe('solve', () => {
-//   it('solves a naked triple', () => {
-//     const grid = parseGrid('720196083000285070080374020000940060196523847040610000030801090000702000200439018')!
-
-//     const solved = solve({ grid, techniques: [] })
-
-//     expect(solved).toEqual({ grid, techniques: [] })
-//   })
-// })
+import solve, { applyOperation, eliminateInvalidCandidates, eliminationTechniques, enterDigit, nextOperation, solvingTechniques } from '../src/solver'
 
 const prepareGrid = (gridString: string): SudokuGrid => {
   const grid = parseGrid(gridString)
@@ -760,22 +750,35 @@ describe('solve', () => {
     )
   })
   
-  // it('solves a tough puzzle', () => {
-  //   // const grid = prepareGrid('3.9...4..2..7.9....87......75.86.2396..9.47.892835..41......59....1.6..7..6...1.4')!
-  //   const grid = prepareGrid('000470050300006000000000001000150020200000600000060000015000000000600300073008000')!
+  it('solves a tough puzzle', () => {
+    // const grid = prepareGrid('3.9...4..2..7.9....87......75.86.2396..9.47.892835..41......59....1.6..7..6...1.4')!
+    const grid = prepareGrid('740610205560007090000900704305090600400006300600070001000080002030009070000700400')!
   
-  //   const solution = solve({ grid, techniques: [] })
+    const solution = solve({ grid, techniques: [] })
   
-  //   expect(serializeGrid(solution.grid)).toEqual(
-  //     ''
-  //   )
+    expect(serializeGrid(solution.grid)).toEqual(
+      '749618235563247198821935764385491627417526389692873541176384952234159876958762413'
+    )
   
-  //   console.log(solution.techniques)
+    console.log(solution.techniques)
   
-  //   // expect(solution.techniques).toEqual(
-  //   //   [
-        
-  //   //   ]  
-  //   // )
-  // })
+    expect(solution.techniques).toEqual(
+      [
+        'Hidden Single', 'Hidden Single', 'Hidden Single', 'Hidden Single',
+        'Hidden Single', 'Last Digit', 'Hidden Single', 'Hidden Single',
+        'Hidden Single', 'Hidden Single', 'Locked Candidates Type 1 (Pointing)',
+        'Swordfish', 'Naked Triple', 'Naked Single', 'Naked Single',
+        'Hidden Single', 'Hidden Single', 'Naked Single', 'Full House',
+        'Full House', 'Naked Single', 'Full House', 'Full House',
+        'Naked Single', 'Naked Single', 'Naked Single', 'Last Digit',
+        'Naked Single', 'Full House', 'Naked Single', 'Full House',
+        'Full House', 'Full House', 'Full House', 'Naked Single',
+        'Full House', 'Full House', 'Last Digit', 'Full House',
+        'Naked Single', 'Full House', 'Full House', 'Last Digit',
+        'Last Digit', 'Naked Single', 'Full House', 'Full House',
+        'Full House', 'Last Digit', 'Full House', 'Last Digit',
+        'Full House', 'Full House', 'Full House'
+      ]
+    )
+  })
 })

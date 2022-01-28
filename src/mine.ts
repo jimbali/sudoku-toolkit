@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { SudokuCreator } from '@algorithm.ts/sudoku'
 import { add, any, countBy, curry, filter, flatten, gt, join, map, until, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
