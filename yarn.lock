@@ -668,6 +668,14 @@
     "@types/yargs" "^16.0.0"
     chalk "^4.0.0"
 
+"@jimbali/sudoku-solver@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@jimbali/sudoku-solver/-/sudoku-solver-0.1.1.tgz#84da3554d0ee965bfea938eb43eb43d8d26082ac"
+  integrity sha512-IFaBiy7QfL7BqWaF/RJTyAWpp5xLStDp0uU+6yhuUIN4RKndeS/PMoJQhfF/IABjs2HXgF9W6ZVacTnq0wdV4w==
+  dependencies:
+    "@algorithm.ts/sudoku" "^1.0.23"
+    sudoku-master "^0.0.3"
+
 "@sinonjs/commons@^1.7.0":
   version "1.8.2"
   resolved "https://registry.yarnpkg.com/@sinonjs/commons/-/commons-1.8.2.tgz#858f5c4b48d80778fde4b9d541f27edc0d56488b"

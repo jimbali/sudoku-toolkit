@@ -2,7 +2,7 @@
 import { SudokuCreator } from '@algorithm.ts/sudoku'
 import { add, any, countBy, curry, filter, flatten, gt, join, map, until, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
-import solve, { Solution } from './solver'
+import { Solution, solve } from '@jimbali/sudoku-solver'
 import { ObjectId } from 'mongodb'
 import Logger from './logger'
 import * as mongoDb from 'mongodb'
