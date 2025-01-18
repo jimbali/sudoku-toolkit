@@ -4,19 +4,18 @@ import { add, any, countBy, curry, filter, flatten, gt, join, map, until, __ } f
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import { Solution, solve } from '@jimbali/sudoku-solver'
 import Logger from './logger'
-import * as mongoDb from 'mongodb'
 import * as dotenv from 'dotenv'
 import { PuzzleSchema, TallySchema } from '@jimbali/sudoku-api-contract'
 import { z } from 'zod'
 import { EliminationTechnique } from 'sudoku-master/lib/solver/logical/eliminating/types'
 import { SolvingTechnique } from 'sudoku-master/lib/solver/logical/solving/types'
-import { mapValues } from 'lodash'
+import { inRange, invert, mapValues } from 'lodash'
 import { initClient } from '@ts-rest/core'
 import { apiContract } from '@jimbali/sudoku-api-contract'
 import { clientCredentialsGrant, discovery } from 'openid-client'
 dotenv.config()
 
-const logger = new Logger('info')
+const logger = new Logger(process.env.LOG_LEVEL ?? 'info')
 
 type Tally = {
   'Full House'?: number,
@@ -71,15 +70,33 @@ const techniqueNames: Record<keyof TallyDto, EliminationTechnique | SolvingTechn
   jellyfish: 'Jellyfish',
   other: 'other'
 }
+const techniqueKeys = invert(techniqueNames) as Record<EliminationTechnique | SolvingTechnique | 'other', keyof TallyDto>
 
 const toTallyDto = (tally: Tally): TallyDto =>
   mapValues(techniqueNames, (_value: unknown, key: keyof typeof techniqueNames) =>
-    tally[techniqueNames[key] as keyof Tally] ?? 0)
+    tally[techniqueNames[key] as keyof Tally] ?? 0
+  )
+
+const fromTallyDto = (tally: TallyDto): Tally =>
+  mapValues(techniqueKeys, (_value: unknown, key: keyof typeof techniqueKeys) =>
+    tally[techniqueKeys[key] as keyof TallyDto]
+  )
 
 const toPuzzleDto = (puzzle: Puzzle): PuzzleDto => ({
   ...puzzle,
   solved: puzzle.solved ?? false,
   tally: toTallyDto(puzzle.tally!),
+})
+
+const fromPuzzleDto = (puzzle: PuzzleDto): Puzzle => ({
+  ...puzzle,
+  id: puzzle.id ?? undefined,
+  gridString: puzzle.gridString ?? undefined,
+  solutionString: puzzle.solutionString ?? undefined,
+  intendedDifficulty: puzzle.intendedDifficulty ?? undefined,
+  givens: puzzle.givens ?? undefined,
+  calculatedDifficulty: puzzle.calculatedDifficulty ?? undefined,
+  tally: fromTallyDto(puzzle.tally!),
 })
 
 const creator = new SudokuCreator({ childMatrixSize: 3 })
@@ -130,47 +147,31 @@ const isNicePuzzle = (puzzle: Puzzle): boolean => {
 }
 
 const savePuzzle = async (puzzle: Puzzle) => {
-  logger.debug("Saving puzzle...")
+  logger.debug('Saving puzzle...')
 
-  console.log(puzzle)
+  logger.debug(puzzle)
 
   try {
+    let response: { status: number }
     if (puzzle.id) {
-      const response = await apiClient.updatePuzzle({ params: { id: puzzle.id }, body: toPuzzleDto(puzzle) })
-      console.log(response)
+      response = await apiClient.updatePuzzle({ params: { id: puzzle.id }, body: toPuzzleDto(puzzle) })
     } else {
-      const response = await apiClient.createPuzzle({ body: toPuzzleDto(puzzle) })
-      console.log(response)
+      response = await apiClient.createPuzzle({ body: toPuzzleDto(puzzle) })
+    }
+    if ([200, 201].includes(response.status)) {
+      logger.debug('Puzzle saved')
+    } else {
+      logger.error('Failed to save puzzle - status: ' + response.status)
     }
   } catch (error) {
-    console.error(error)
+    logger.error(error)
   }
 }
 
-const getAllPuzzles = async () => {
-  const client: mongoDb.MongoClient = new mongoDb.MongoClient(process.env.MONGODB_URL!)
-          
-  await client.connect()
-      
-  const db: mongoDb.Db = client.db('sudoku')
-  const puzzlesCollection: mongoDb.Collection = db.collection('puzzles')
-      
-  logger.log(
-    `Successfully connected to database: ${db.databaseName} and collection: ${puzzlesCollection.collectionName}`
-  )
-
-  try {
-    const result = await puzzlesCollection.find({})
-
-    result
-        ? logger.log(`Successfully found puzzles`)
-        : logger.error('Failed to find puzzles')
-    
-    return result
-    
-  } catch (error) {
-      logger.error(error)
-  }
+const getPuzzleBatch = async (batchSize: number, offset: number): Promise<Puzzle[]> => {
+  const response = await apiClient.getPuzzles({ query: { take: String(batchSize), skip: String(offset) } })
+  const puzzles = response.body as PuzzleDto[]
+  return puzzles.map((puzzle) => fromPuzzleDto(puzzle))
 }
 
 const createPuzzle = (): Puzzle => {
@@ -199,7 +200,6 @@ const getAndAnalysePuzzle = curry((getter: (() => Puzzle), _memo: Puzzle): Puzzl
   const endString = serializeGrid(solution.grid!)
   
   logger.debug(endString)
-  // logger.debug(solution.techniques)
   
   puzzle.solved = endString === puzzle.solutionString
   
@@ -207,8 +207,6 @@ const getAndAnalysePuzzle = curry((getter: (() => Puzzle), _memo: Puzzle): Puzzl
 
   puzzle.tally = countBy((i) => i as string, solution.techniques)
   logger.debug(puzzle.tally)
-
-  // let puzzle: Puzzle = { gridString, solutionString, solved, tally, intendedDifficulty, givens }
 
   puzzle.calculatedDifficulty = rate(puzzle)
   logger.debug(puzzle.calculatedDifficulty)
@@ -252,13 +250,24 @@ const minePuzzles = async () => {
 const rateExistingPuzzles = async () => {
   await obtainAccessToken()
 
-  const cursor = await getAllPuzzles()
+  const batchSize = Number(process.env.BATCH_SIZE ?? 100)
+  let page = 0
+  let count = 0
 
-  for await (const doc of cursor!) {
-    const puzzle = doc as Puzzle
-    puzzle.calculatedDifficulty = rate(puzzle)
-    await savePuzzle(puzzle)
+  let puzzleBatch = await getPuzzleBatch(batchSize, 0)
+
+  while (puzzleBatch.length > 0) {
+    for (const puzzle of puzzleBatch) {
+      puzzle.calculatedDifficulty = rate(puzzle)
+      await savePuzzle(puzzle)
+      count++
+    }
+
+    page++
+    puzzleBatch = await getPuzzleBatch(batchSize, page * batchSize)
   }
+
+  logger.log(`Rated ${count} puzzles`)
 
   process.exit()
 }
@@ -270,52 +279,3 @@ if (process.argv.includes('--rate')) {
 } else {
   minePuzzles()
 }
-
-const allTechniques = [
-  'Full House',
-  'Last Digit',
-  'Naked Single',
-  'Hidden Single',
-  'Naked Pair',
-  'Naked Triple',
-  'Locked Pair',
-  'Locked Candidates Type 1 (Pointing)',
-  'Locked Candidates Type 2 (Claiming)',
-  'Hidden Pair',
-  'Hidden Triple',
-  'Naked Quadruple',
-  'Hidden Quadruple',
-  'X-Wing',
-  'Swordfish',
-  'Jellyfish',
-  'other'
-]
-
-// 000000030000010040901083500365200800000000000109800005008004300500370009000009600
-// {
-//   solved: true,
-//   tally: {
-//     'Hidden Single': 9,
-//     'Locked Candidates Type 2 (Claiming)': 2,
-//     'X-Wing': 1,
-//     Swordfish: 2,
-//     'Naked Triple': 1,
-//     'Naked Single': 19,
-//     'Last Digit': 7,
-//     'Full House': 20
-//   }
-// }
-
-// {
-//   gridString: '700000315000460000950001000000000008003907100000120000004090600010704030030010007',
-//   solutionString: '746289315321465789958371264192536478583947126467128593274893651619754832835612947',
-//   solved: true,
-//   tally: {
-//     'Naked Single': 17,
-//     'Full House': 21,
-//     'Hidden Single': 10,
-//     'Last Digit': 7,
-//     'Naked Pair': 1,
-//     'X-Wing': 1
-//   }
-// }
