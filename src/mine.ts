@@ -3,11 +3,17 @@ import { SudokuCreator } from '@algorithm.ts/sudoku'
 import { add, any, countBy, curry, filter, flatten, gt, join, map, until, __ } from 'ramda'
 import { parseGrid, serializeGrid } from 'sudoku-master'
 import { Solution, solve } from '@jimbali/sudoku-solver'
-import { ObjectId } from 'mongodb'
 import Logger from './logger'
 import * as mongoDb from 'mongodb'
 import * as dotenv from 'dotenv'
-
+import { PuzzleSchema, TallySchema } from '@jimbali/sudoku-api-contract'
+import { z } from 'zod'
+import { EliminationTechnique } from 'sudoku-master/lib/solver/logical/eliminating/types'
+import { SolvingTechnique } from 'sudoku-master/lib/solver/logical/solving/types'
+import { mapValues } from 'lodash'
+import { initClient } from '@ts-rest/core'
+import { apiContract } from '@jimbali/sudoku-api-contract'
+import { clientCredentialsGrant, discovery } from 'openid-client'
 dotenv.config()
 
 const logger = new Logger('info')
@@ -33,7 +39,7 @@ type Tally = {
 }
 
 type Puzzle = {
-  _id?: ObjectId
+  id?: string
   gridString?: string
   solutionString?: string
   solved?: boolean
@@ -43,7 +49,50 @@ type Puzzle = {
   calculatedDifficulty?: string
 }
 
+type PuzzleDto = z.infer<typeof PuzzleSchema>
+type TallyDto = z.infer<typeof TallySchema>
+
+const techniqueNames: Record<keyof TallyDto, EliminationTechnique | SolvingTechnique | 'other'> = {
+  fullHouse: 'Full House',
+  lastDigit: 'Last Digit',
+  nakedSingle: 'Naked Single',
+  hiddenSingle: 'Hidden Single',
+  nakedPair: 'Naked Pair',
+  nakedTriple: 'Naked Triple',
+  lockedPair: 'Locked Pair',
+  lockedCandidatesType1: 'Locked Candidates Type 1 (Pointing)',
+  lockedCandidatesType2: 'Locked Candidates Type 2 (Claiming)',
+  hiddenPair: 'Hidden Pair',
+  hiddenTriple: 'Hidden Triple',
+  nakedQuadruple: 'Naked Quadruple',
+  hiddenQuadruple: 'Hidden Quadruple',
+  xWing: 'X-Wing',
+  swordfish: 'Swordfish',
+  jellyfish: 'Jellyfish',
+  other: 'other'
+}
+
+const toTallyDto = (tally: Tally): TallyDto =>
+  mapValues(techniqueNames, (_value: unknown, key: keyof typeof techniqueNames) =>
+    tally[techniqueNames[key] as keyof Tally] ?? 0)
+
+const toPuzzleDto = (puzzle: Puzzle): PuzzleDto => ({
+  ...puzzle,
+  solved: puzzle.solved ?? false,
+  tally: toTallyDto(puzzle.tally!),
+})
+
 const creator = new SudokuCreator({ childMatrixSize: 3 })
+
+let token: string
+
+const apiClient = initClient(apiContract, {
+  baseUrl: process.env.SUDOKU_API_URL!,
+  baseHeaders: {
+    'x-app-source': 'ts-rest',
+    'Authorization': () => `Bearer ${token}`,
+  },
+})
 
 const rate = (puzzle: Puzzle) => {
   const hardTechniques: (keyof Tally)[] = [
@@ -82,35 +131,19 @@ const isNicePuzzle = (puzzle: Puzzle): boolean => {
 
 const savePuzzle = async (puzzle: Puzzle) => {
   logger.debug("Saving puzzle...")
-  
-  const client: mongoDb.MongoClient = new mongoDb.MongoClient(process.env.MONGODB_URL!)
-          
-  await client.connect()
-      
-  const db: mongoDb.Db = client.db('sudoku')
-  const puzzlesCollection: mongoDb.Collection = db.collection('puzzles')
-      
-  logger.log(
-    `Successfully connected to database: ${db.databaseName} and collection: ${puzzlesCollection.collectionName}`
-  )
+
+  console.log(puzzle)
 
   try {
-    if (puzzle._id) {
-      const result = await puzzlesCollection.replaceOne({ _id: puzzle._id }, puzzle)
-      result
-          ? logger.log(`Successfully updated puzzle with id ${puzzle._id} @ ${Date.now()}`)
-          : logger.error('Failed to save puzzle')
+    if (puzzle.id) {
+      const response = await apiClient.updatePuzzle({ params: { id: puzzle.id }, body: toPuzzleDto(puzzle) })
+      console.log(response)
     } else {
-      const result = await puzzlesCollection.insertOne(puzzle)
-      result
-          ? logger.log(`Successfully saved new puzzle with id ${result.insertedId} @ ${Date.now()}`)
-          : logger.error('Failed to save puzzle')
+      const response = await apiClient.createPuzzle({ body: toPuzzleDto(puzzle) })
+      console.log(response)
     }
   } catch (error) {
-      logger.error(error)
-  } finally {
-    logger.log('Disconnecting from DB...')
-    client.close()
+    console.error(error)
   }
 }
 
@@ -198,13 +231,27 @@ const findPuzzle = async () => {
   await savePuzzle(nicePuzzle)
 }
 
+const obtainAccessToken = async () => {
+  const config = await discovery(
+    new URL(process.env.AUTH_SERVER_URL!),
+    process.env.AUTH_CLIENT_ID!,
+    process.env.AUTH_CLIENT_SECRET!,
+  )
+  const response = await clientCredentialsGrant(config)
+  token = response.access_token
+}
+
 const minePuzzles = async () => {
+  await obtainAccessToken()
+
   while (true) {
     await findPuzzle()
   }
 }
 
 const rateExistingPuzzles = async () => {
+  await obtainAccessToken()
+
   const cursor = await getAllPuzzles()
 
   for await (const doc of cursor!) {

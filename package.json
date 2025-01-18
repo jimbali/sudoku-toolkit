@@ -4,10 +4,15 @@
   },
   "dependencies": {
     "@algorithm.ts/sudoku": "^1.0.23",
+    "@jimbali/sudoku-api-contract": "^0.2.0",
     "@jimbali/sudoku-solver": "^0.1.1",
-    "@types/node": "^14.14.14",
+    "@ts-rest/core": "^3.51.0",
+    "@types/lodash": "^4.17.14",
+    "@types/node": "^22.10.7",
     "dotenv": "^10.0.0",
+    "lodash": "^4.17.21",
     "mongodb": "^4.2.2",
+    "openid-client": "^6.1.7",
     "sudoku-master": "^0.0.3"
   },
   "description": "Toolkit for generating, solving, rating and mining sudoku puzzles",
