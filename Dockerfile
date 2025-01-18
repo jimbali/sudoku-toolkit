@@ -1,14 +1,13 @@
-    FROM node:alpine
+FROM node:22-alpine
 
-    WORKDIR /app
+WORKDIR /app
 
-    COPY package.json .
+COPY package.json package-lock.json ./
 
-    RUN npm install\
-        && npm install typescript -g
+RUN npm install
 
-    COPY . .
+COPY . .
 
-    RUN tsc
+RUN npx tsc
 
-    CMD ["node", "./dist/run.js"]
+CMD ["node", "./dist/run.js"]

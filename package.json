@@ -33,10 +33,10 @@
     "url": "https://github.com/jimbali/sudoku-toolkit"
   },
   "scripts": {
-    "build": "tsc",
-    "prepare": "yarn run build",
+    "build": "npx tsc",
+    "prepublishOnly": "npm run build",
     "test": "jest"
   },
   "typings": "dist/src",
-  "version": "0.1.4"
+  "version": "0.1.5"
 }
